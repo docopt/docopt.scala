@@ -1,16 +1,18 @@
 package org.docopt.matching
 
+import scala.{Option => SOption}
+
 import org.docopt.patterns._
 
 object PatternMatcher {
   type SPat = Seq[Pattern]
-  type MaybeMatch = scala.Option[Tuple2[SPat, SPat]]
-  type MaybeChild = scala.Option[Tuple2[Int, Pattern]]
+  type MaybeMatch = SOption[Tuple2[SPat, SPat]]
+  type MaybeChild = SOption[Tuple2[Int, Pattern]]
 
   def matchPattern(matcher: Pattern, left: SPat, collected: SPat = Nil): MaybeMatch = matcher match {
     case child:Argument => matchChildPattern(child, left, collected)
     case child:Command => matchChildPattern(child, left, collected)
-    case child:CmdOption => matchChildPattern(child, left, collected)
+    case child:Option => matchChildPattern(child, left, collected)
     case req:Required => matchRequired(req, left, collected)
     case opt:Optional => matchOptional(opt, left, collected)
   }
@@ -19,7 +21,7 @@ object PatternMatcher {
     val matched = child match {
       case a:Argument => matchArgument(a, left)
       case c:Command => matchCommand(c, left)
-      case o:CmdOption => matchCmdOption(o, left)
+      case o:Option => matchOption(o, left)
     }
     matched match {
       case Some((pos, matched)) => {
@@ -53,12 +55,12 @@ object PatternMatcher {
       }
     }
 
-  private def matchCmdOption(opt: CmdOption, left: SPat, index: Int = 0): MaybeChild =
+  private def matchOption(opt: Option, left: SPat, index: Int = 0): MaybeChild =
     left match {
       case Nil => None
       case head :: tail => head match {
-        case o:CmdOption if o.name == opt.name => Some(index, o)
-        case _ => matchCmdOption(opt, tail, index+1)
+        case o:Option if o.name == opt.name => Some(index, o)
+        case _ => matchOption(opt, tail, index+1)
       }
     }
 

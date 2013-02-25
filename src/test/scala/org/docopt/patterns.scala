@@ -19,9 +19,9 @@ class BasicNewPatternSuite extends FunSpec {
   // helper for matching
   val argumentPattern = List(Argument("", IntValue(intValue.toInt)))
   val otherArgumentPattern = List(Argument("", DoubleValue(doubleValue.toDouble)))
-  val optionPattern = List(CmdOption(shortOption,""))
+  val optionPattern = List(Option(shortOption,""))
   val otherOption = "-x"
-  val otherOptionPattern = List(CmdOption(otherOption,""))
+  val otherOptionPattern = List(Option(otherOption,""))
   val manyPattern = otherOptionPattern ::: optionPattern ::: argumentPattern
   val RequiredPattern  = List(Required(optionPattern))
 
@@ -95,121 +95,121 @@ class BasicNewPatternSuite extends FunSpec {
   describe("An Option") {
     val ValidshortOption = "  %s  %s.".format(shortOption, description)
     it("should parse correctly: '%s'".format(ValidshortOption)) {
-      val opt = PP.parseCmdOption(ValidshortOption)
-      assert (opt.get == new CmdOption(shortOption, ""))
+      val opt = PP.parseOption(ValidshortOption)
+      assert (opt.get == new Option(shortOption, ""))
     }
 
     val ValidlongOption = "  %s  %s.".format(longOption, description)
     it("should parse correctly: '%s'".format(ValidlongOption)) {
-      val opt = PP.parseCmdOption(ValidlongOption)
-      assert (opt.get == new CmdOption("", longOption))
+      val opt = PP.parseOption(ValidlongOption)
+      assert (opt.get == new Option("", longOption))
     }
 
     val ValidShortlongOption = "  %s %s  %s.".format(shortOption, longOption, description)
     it("should parse correctly: '%s'".format(ValidShortlongOption)) {
-      val opt = PP.parseCmdOption(ValidShortlongOption)
-      assert (opt.get == new CmdOption(shortOption, longOption))
+      val opt = PP.parseOption(ValidShortlongOption)
+      assert (opt.get == new Option(shortOption, longOption))
     }
 
     val ValidShortCommalongOption = "  %s, %s  %s.".format(shortOption, longOption, description)
     it("should parse correctly: '%s'".format(ValidShortCommalongOption)) {
-      val opt = PP.parseCmdOption(ValidShortCommalongOption)
-      assert (opt.get == new CmdOption(shortOption, longOption))
+      val opt = PP.parseOption(ValidShortCommalongOption)
+      assert (opt.get == new Option(shortOption, longOption))
     }
 
     val ValidShortLongInverseOption = "  %s %s  %s.".format(longOption, shortOption, description)
     it("should parse correctly: '%s'".format(ValidShortLongInverseOption)) {
-      val opt = PP.parseCmdOption(ValidShortLongInverseOption)
-      assert (opt.get == new CmdOption(shortOption, longOption))
+      val opt = PP.parseOption(ValidShortLongInverseOption)
+      assert (opt.get == new Option(shortOption, longOption))
     }
 
     val ValidShortSpaceArgumentOption = "  %s %s  %s".format(shortOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortSpaceArgumentOption)) {
-      val opt = PP.parseCmdOption(ValidShortSpaceArgumentOption)
-      assert (opt.get == new CmdOption(shortOption, "", 1))
+      val opt = PP.parseOption(ValidShortSpaceArgumentOption)
+      assert (opt.get == new Option(shortOption, "", 1))
     }
 
     val ValidShortEqualArgumentOption = "  %s=%s  %s".format(shortOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortEqualArgumentOption)) {
-      val opt = PP.parseCmdOption(ValidShortEqualArgumentOption)
-      assert (opt.get == new CmdOption(shortOption, "", 1))
+      val opt = PP.parseOption(ValidShortEqualArgumentOption)
+      assert (opt.get == new Option(shortOption, "", 1))
     }
 
     val ValidLongSpaceArgumentOption = "  %s %s  %s".format(longOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidLongSpaceArgumentOption)) {
-      val opt = PP.parseCmdOption(ValidLongSpaceArgumentOption)
-      assert (opt.get == new CmdOption("", longOption, 1))
+      val opt = PP.parseOption(ValidLongSpaceArgumentOption)
+      assert (opt.get == new Option("", longOption, 1))
     }
 
     val ValidShortLongArgumentOption = "  %s %s %s %s  %s.".format(shortOption, capitalArgument, longOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortLongArgumentOption)) {
-      val opt = PP.parseCmdOption(ValidShortLongArgumentOption)
-      assert (opt.get == new CmdOption(shortOption, longOption, 1))
+      val opt = PP.parseOption(ValidShortLongArgumentOption)
+      assert (opt.get == new Option(shortOption, longOption, 1))
     }
 
     val ValidShortCommaLongArgumentOption = "  %s %s, %s %s  %s.".format(shortOption, capitalArgument, longOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortCommaLongArgumentOption)) {
-      val opt = PP.parseCmdOption(ValidShortCommaLongArgumentOption)
-      assert (opt.get == new CmdOption(shortOption, longOption, 1))
+      val opt = PP.parseOption(ValidShortCommaLongArgumentOption)
+      assert (opt.get == new Option(shortOption, longOption, 1))
     }
 
     val ValidShortCommaLongEqualArgumentOption = "  %s %s, %s=%s  %s.".format(shortOption, capitalArgument, longOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortCommaLongEqualArgumentOption)) {
-      val opt = PP.parseCmdOption(ValidShortCommaLongEqualArgumentOption)
-      assert (opt.get == new CmdOption(shortOption, longOption, 1))
+      val opt = PP.parseOption(ValidShortCommaLongEqualArgumentOption)
+      assert (opt.get == new Option(shortOption, longOption, 1))
     }
 
     val ValidShortArgumentDefaultOption = "  %s %s  %s [default: %s].".format(shortOption, capitalArgument, description, stringValue)
     it("should parse correctly: '%s'".format(ValidShortArgumentDefaultOption)) {
-      val opt = PP.parseCmdOption(ValidShortArgumentDefaultOption)
-      assert (opt.get == new CmdOption(shortOption, "", 1, StringValue(stringValue)))
+      val opt = PP.parseOption(ValidShortArgumentDefaultOption)
+      assert (opt.get == new Option(shortOption, "", 1, StringValue(stringValue)))
     }
 
     val ValidShortArgumentDefaultIntOption = "  %s %s  %s [default: %s].".format(shortOption, capitalArgument, description, intValue)
     it("should parse correctly: '%s'".format(ValidShortArgumentDefaultIntOption)) {
-      val opt = PP.parseCmdOption(ValidShortArgumentDefaultIntOption)
-      assert (opt.get == new CmdOption(shortOption, "", 1, IntValue(intValue.toInt)))
+      val opt = PP.parseOption(ValidShortArgumentDefaultIntOption)
+      assert (opt.get == new Option(shortOption, "", 1, IntValue(intValue.toInt)))
     }
 
     val ValidShortArgumentDefaultFloatOption = "  %s %s  %s [default: %s].".format(shortOption, capitalArgument, description, doubleValue)
     it("should parse correctly: '%s'".format(ValidShortArgumentDefaultFloatOption)) {
-      val opt = PP.parseCmdOption(ValidShortArgumentDefaultFloatOption)
-      assert (opt.get == new CmdOption(shortOption, "", 1, DoubleValue(doubleValue.toDouble)))
+      val opt = PP.parseOption(ValidShortArgumentDefaultFloatOption)
+      assert (opt.get == new Option(shortOption, "", 1, DoubleValue(doubleValue.toDouble)))
     }
 
     val ValidShortArgumentDefaultPathOption = "  %s %s  %s [default: %s].".format(shortOption, capitalArgument, description, pathValue)
     it("should parse correctly: '%s'".format(ValidShortArgumentDefaultPathOption)) {
-      val opt = PP.parseCmdOption(ValidShortArgumentDefaultPathOption)
-      assert (opt.get == new CmdOption(shortOption, "", 1, StringValue(pathValue)))
+      val opt = PP.parseOption(ValidShortArgumentDefaultPathOption)
+      assert (opt.get == new Option(shortOption, "", 1, StringValue(pathValue)))
     }
 
     val ValidShortArgumentDefaultInsensitiveOption = "  %s %s  %s [dEfAuLt: %s].".format(shortOption, capitalArgument, description, stringValue)
     it("should parse correctly: '%s'".format(ValidShortArgumentDefaultInsensitiveOption)) {
-      val opt = PP.parseCmdOption(ValidShortArgumentDefaultInsensitiveOption)
-      assert (opt.get == new CmdOption(shortOption, "", 1, StringValue(stringValue)))
+      val opt = PP.parseOption(ValidShortArgumentDefaultInsensitiveOption)
+      assert (opt.get == new Option(shortOption, "", 1, StringValue(stringValue)))
     }
 
     // // Matching
     it("should match itself") {
-      assert (PM.matchPattern(CmdOption(shortOption,""), optionPattern) ==
+      assert (PM.matchPattern(Option(shortOption,""), optionPattern) ==
         Some((Nil, optionPattern)))
     }
 
     it("should not match another option") {
-      assert (PM.matchPattern(CmdOption(shortOption,""), otherOptionPattern) == None)
+      assert (PM.matchPattern(Option(shortOption,""), otherOptionPattern) == None)
     }
 
     it("should not match an argument") {
-      assert (PM.matchPattern(CmdOption(shortOption,""), argumentPattern) == None)
+      assert (PM.matchPattern(Option(shortOption,""), argumentPattern) == None)
     }
 
     it("should match a list of patterns") {
-      assert (PM.matchPattern(CmdOption(shortOption,""), manyPattern) ==
+      assert (PM.matchPattern(Option(shortOption,""), manyPattern) ==
         Some(otherOptionPattern ::: argumentPattern, optionPattern))
     }
 
     it("should match a list of itself and consume only once") {
-      assert (PM.matchPattern(CmdOption(shortOption,""),
+      assert (PM.matchPattern(Option(shortOption,""),
                               optionPattern ::: optionPattern) ==
         Some(optionPattern, optionPattern))
     }

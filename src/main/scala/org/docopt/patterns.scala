@@ -11,13 +11,13 @@ case class StringValue(value: String = "") extends Value
 abstract class Pattern
 case class Argument(name: String, value: Value = StringValue()) extends Pattern
 case class Command(name: String, value: Value = BooleanValue(false)) extends Pattern
-case class CmdOption(short: String, long: String, count: Int = 0, value: Value = StringValue()) extends Pattern {
+case class Option(short: String, long: String, count: Int = 0, value: Value = StringValue()) extends Pattern {
   def name: String = if (short != "") short else long
 }
 
 // Composed Patterns
-case class Required(children: List[Pattern]) extends Pattern with ParentPattern
-case class Optional(children: List[Pattern]) extends Pattern with ParentPattern
-case class AnyOptions(children: List[Pattern]) extends Pattern with ParentPattern
-case class OneOrMore(children: List[Pattern]) extends Pattern with ParentPattern
-case class Either(children: List[Pattern]) extends Pattern with ParentPattern
+case class Required(children: List[Pattern]) extends Pattern
+case class Optional(children: List[Pattern]) extends Pattern
+case class AnyOptions(children: List[Pattern]) extends Pattern
+case class OneOrMore(children: List[Pattern]) extends Pattern
+case class Either(children: List[Pattern]) extends Pattern

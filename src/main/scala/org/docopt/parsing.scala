@@ -31,7 +31,7 @@ object PatternParser {
     Some(Argument("""(<\S*?>)""".r.findFirstIn(argument).getOrElse(""),
                   parseDefault(argument)))
 
-  def parseCmdOption(option: String) : SOption[CmdOption] = {
+  def parseOption(option: String) : SOption[Option] = {
     // this replace removes traling whitespaces
     option.replaceAll("""(?m)\s+$""", "").split("  ").filter(_ != "") match {
       case Array(options, description) => {
@@ -46,15 +46,15 @@ object PatternParser {
             }
           }
         }
-        Some(CmdOption(short, long, argcount, parseDefault(description)))
+        Some(Option(short, long, argcount, parseDefault(description)))
       }
       case _ => None
     }
   }
 
-  def parseOptionsDescriptions(doc: String): Iterator[CmdOption] = {
+  def parseOptionsDescriptions(doc: String): Iterator[Option] = {
     val optionMatchRegex = """\n[\t ]*(-\S+[^\n]*)""".r
     for (optionMatch <- optionMatchRegex.findAllIn(doc).matchData;
-         option <- parseCmdOption(optionMatch.group(1))) yield option
+         option <- parseOption(optionMatch.group(1))) yield option
   }
 }
