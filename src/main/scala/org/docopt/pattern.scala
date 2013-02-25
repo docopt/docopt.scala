@@ -1,4 +1,4 @@
-package org.docopt.patterns
+package org.docopt.pattern
 
 // Values
 class Value

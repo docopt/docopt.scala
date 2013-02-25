@@ -1,7 +1,7 @@
 package org.docopt.parsing
 
 import scala.{Option => SOption}
-import org.docopt.patterns._
+import org.docopt.pattern._
 
 object PatternParser {
   def parseValue(value: String): Value = {

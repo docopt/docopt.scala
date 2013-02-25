@@ -1,7 +1,7 @@
 import org.scalatest.FunSpec
 import org.docopt.matching.{PatternMatcher => PM}
 import org.docopt.parsing.{PatternParser => PP}
-import org.docopt.patterns._
+import org.docopt.pattern._
 
 class BasicNewPatternSuite extends FunSpec {
   // string references

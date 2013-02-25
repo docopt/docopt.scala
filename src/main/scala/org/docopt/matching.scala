@@ -2,7 +2,7 @@ package org.docopt.matching
 
 import scala.{Option => SOption}
 
-import org.docopt.patterns._
+import org.docopt.pattern._
 
 object PatternMatcher {
   type SPat = Seq[Pattern]
