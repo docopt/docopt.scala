@@ -18,6 +18,6 @@ case class Option(short: String, long: String, count: Int = 0, value: Value = St
 // Composed Patterns
 case class Required(children: List[Pattern]) extends Pattern
 case class Optional(children: List[Pattern]) extends Pattern
-case class AnyOptions(children: List[Pattern]) extends Pattern
+case class AnyOptions(children: List[Pattern] = Nil) extends Pattern
 case class OneOrMore(children: List[Pattern]) extends Pattern
 case class Either(children: List[Pattern]) extends Pattern
