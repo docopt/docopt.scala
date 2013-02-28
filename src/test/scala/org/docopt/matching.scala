@@ -6,8 +6,10 @@ import org.scalatest.FunSpec
 
 class SingleMatchingPatternSuite extends FunSpec {
   describe("An Argument") {
-    val CombinedargumentPattern = List(Argument(capitalArgument, IntValue(intValue.toInt)))
+    val CombinedargumentPattern = List(Argument(capitalArgument, StringValue(intValue)))
     it("should match itself and extract the value") {
+      println(PM.matchPattern(Argument(capitalArgument), argumentPattern))
+      println(CombinedargumentPattern)
       assert (PM.matchPattern(Argument(capitalArgument), argumentPattern) ==
         Some(Nil, CombinedargumentPattern))
     }
@@ -142,7 +144,7 @@ class SingleMatchingPatternSuite extends FunSpec {
         Some(argumentPattern, Nil))
     }
 
-    val CombinedargumentPattern = List(Argument(capitalArgument, IntValue(intValue.toInt)))
+    val CombinedargumentPattern = List(Argument(capitalArgument, StringValue(intValue)))
     it("with an argument should match it and extract the value") {
       assert (PM.matchPattern(Required(List(Argument(capitalArgument))), argumentPattern) ==
         Some(Nil, CombinedargumentPattern))
@@ -210,7 +212,7 @@ class SingleMatchingPatternSuite extends FunSpec {
       assert (PM.matchPattern(OneOrMore(namedArgumentPattern),
                               argumentPattern ::: otherArgumentPattern) ==
         Some(Nil, namedArgumentCollectedPattern ::: List(Argument("M",
-          DoubleValue(doubleValue.toDouble)))))
+          StringValue(doubleValue)))))
     }
 
     it("with 1 argument should match 2 arguments, collect them both and leave options") {
@@ -219,7 +221,7 @@ class SingleMatchingPatternSuite extends FunSpec {
                               optionPattern :::
                               otherArgumentPattern) ==
         Some(optionPattern, namedArgumentCollectedPattern ::: List(Argument("M",
-          DoubleValue(doubleValue.toDouble)))))
+          StringValue(doubleValue)))))
     }
 
     it("with 1 option should match 2 option, collect them both and leave the argument") {
@@ -248,7 +250,7 @@ class SingleMatchingPatternSuite extends FunSpec {
              optionPattern :::
              namedArgumentCollectedPattern :::
              optionPattern :::
-             List(Argument("M", DoubleValue(doubleValue.toDouble)))))
+             List(Argument("M", StringValue(doubleValue)))))
     }
 
     it("with 1 Optional(Argument) should match an argument") {

@@ -1,5 +1,8 @@
 package org.docopt.parsing
 
+import scala.util.matching.{Regex}
+import scala.util.matching.Regex.{Match}
+import scala.collection.immutable.{Queue}
 import scala.{Option => SOption}
 import org.docopt.pattern._
 
@@ -22,7 +25,7 @@ object PatternParser {
   def parseDefault(default: String): Value = {
     val defaultPattern = """\[(?i)default: (.*)\]""".r
     defaultPattern.findFirstMatchIn(default) match {
-      case Some(defaultPattern(v)) => PatternParser.parseValue(v)
+      case Some(defaultPattern(v)) => StringValue(v)
       case None => StringValue()
     }
   }
@@ -57,4 +60,41 @@ object PatternParser {
   def parseOptionDescriptions(doc: String): Iterator[Option] =
     for (optionMatch <- """\n[\t ]*(-\S+[^\n]*)""".r .findAllIn(doc).matchData;
          option <- parseOption(optionMatch.group(1))) yield option
+
+  def parsePattern(source: String, options: Seq[Option]): Pattern = {
+    val tokenizeRegex = new Regex("""([\[\]\(\)\|]|\.\.\.)""", "delim")
+    val tokens = tokenStream(tokenizeRegex replaceAllIn
+      (source, (m: Match) => " %s".format(m.group("delim"))))
+    val results = parseExpr(tokens, options)
+    Required(results.toList)
+  }
+
+
+  def parseExpr(tokens: Seq[String], options: Seq[Option]): Seq[Pattern] = {
+    val seq = parseSeq(tokens, options)
+    List(AnyOptions())
+  }
+
+  def parseSeq(tokens: Seq[String], options: Seq[Option]): Seq[Pattern] =
+    List(AnyOptions())
+
+  def parseAtom(tokens: Seq[String], options: Seq[Option]): Seq[Pattern] =
+    List(AnyOptions())
+
+  def parseLongOption(tokens: Seq[String],
+                      options: Seq[Option]): Seq[Option] =
+    List(Option("","--long"))
+
+  def parseShortOption(tokens: Seq[String],
+                       options: Seq[Option]): Seq[Option] =
+    List(Option("-s",""))
+
+  def parseArgV(source: String, options: Seq[Option]): Seq[Pattern] =
+    List(Option("-s",""))
+
+
+  private def tokenStream(source: String, split: Boolean = true): Queue[String] = {
+    val queue:Queue[String] = Queue()
+    Queue().enqueue(source.split("\\s+").toList)
+  }
 }

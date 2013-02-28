@@ -25,22 +25,15 @@ object PatternMatcher {
   private def matchChildPattern(child: Pattern,
                                 left: SPat,
                                 collected: SPat): MaybeMatch = {
-    val matched = child match {
+    (child match {
       case a:Argument => matchArgument(a, left)
       case c:Command => matchCommand(c, left)
       case o:Option => matchOption(o, left)
       case _ => None
-    }
-    matched match {
-      case Some((pos, matched)) => {
-        // move the found match from left to collected
-        val left_ = left.slice(0, pos) ++ left.slice(pos+1, left.length)
-        // TODO(fsaintjacques) fix this
-        //val sameName = (for (a <- collected) yield a).toList
-
-        Some((left_, collected ++ List(matched)))
-      }
-      case _ => None
+    }) map {
+      case (pos, matched:ChildPattern) =>
+        (left.slice(0, pos) ++ left.slice(pos+1, left.length),
+         collectSameName(matched, collected))
     }
   }
 
@@ -49,36 +42,76 @@ object PatternMatcher {
                             index: Int = 0): MaybeChild =
     left match {
       case Nil => None
-      case head :: tail => head match {
-        case Argument(n, v) => Some(index, Argument(arg.name, v))
-        case _ => matchArgument(arg, tail, index+1) } }
+      case Argument(n, v) :: tail => Some(index, Argument(arg.name, v))
+      case head :: tail => matchArgument(arg, tail, index+1)
+    }
+
+  private def collectSameName(arg: ChildPattern,
+                              collected: SPat): SPat = {
+    // http://stackoverflow.com/questions/11394034/why-scalas-pattern-maching-does-not-work-in-for-loops-for-type-matching
+    // http://www.scala-lang.org/node/2187
+    val sameName = (for (a@(_a:ChildPattern) <- collected;
+                         if a.name == arg.name) yield a) toList
+
+    def childPatternUpdateValue(child: ChildPattern, newValue: Value) = child match {
+      case Argument(n, _) => Argument(n, newValue)
+      case Command(n, _) => Command(n, newValue)
+      case Option(s,l,a,_) => Option(s, l, a, newValue)
+    }
+    // TODO(fsaintjacques): this is nasty branching.
+    arg.value match {
+      // we must increment the match or set a new to 0
+      case IntValue(_) =>
+        sameName match {
+          // nobody found if match, don't touch anything.
+          case Nil =>
+            collected ++ List(childPatternUpdateValue(arg, IntValue(1)))
+          case head :: tail => head.value match {
+            case IntValue(i) =>
+              childPatternUpdateValue(head, IntValue(1 + i)) :: tail
+          }
+        }
+      // we must update the list or start a new one.
+      case ManyStringValue(s) => List
+        sameName match {
+          case Nil =>
+            collected ++ List(childPatternUpdateValue(arg, arg.value))
+          case head :: tail => head.value match {
+            case ManyStringValue(s_) =>
+              childPatternUpdateValue(head, ManyStringValue(s ++ s_)) :: tail
+          }
+        }
+      case _ => collected ++ List(childPatternUpdateValue(arg, arg.value))
+    }
+  }
 
   private def matchCommand(cmd: Command,
                            left: SPat,
                            index: Int = 0): MaybeChild =
     left match {
       case Nil => None
-      case head :: tail => head match {
-        case Argument(n, StringValue(v)) if v == cmd.name =>
-          Some(index, Command(cmd.name, BooleanValue(true)))
-        case a:Argument => None
-        case _ => matchCommand(cmd, tail, index+1) } }
+      case Argument(n, StringValue(v)) :: tail if v == cmd.name =>
+        Some(index, Command(cmd.name, BooleanValue(true)))
+      case (a:Argument) :: tail => None
+      case head :: tail => matchCommand(cmd, tail, index+1)
+    }
 
   private def matchOption(opt: Option,
                           left: SPat,
                           index: Int = 0): MaybeChild =
     left match {
       case Nil => None
-      case head :: tail => head match {
-        case o:Option if o.name == opt.name => Some(index, o)
-        case _ => matchOption(opt, tail, index+1) } }
+      case (o:Option) :: tail if o.name == opt.name => Some(index, o)
+      case head :: tail => matchOption(opt, tail, index+1)
+    }
 
   private def matchRequired(req: Required,
                             left: SPat,
                             collected: SPat): MaybeMatch =
     req.children.foldLeft(Some(left, collected):MaybeMatch) {
       case (Some((l, c)), child) => matchPattern(child, l, c)
-      case (None, child) => None }
+      case (None, child) => None
+    }
 
   private def matchOptional(opt: Optional,
                             left: SPat,

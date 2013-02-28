@@ -17,10 +17,10 @@ package object pattern {
   // helper for matching
   val namedArgumentPattern = List(Argument("M"))
   val otherNamedArgumentPattern = List(Argument("N"))
-  val argumentPattern = List(Argument("", IntValue(intValue.toInt)))
-  val otherArgumentPattern = List(Argument("", DoubleValue(doubleValue.toDouble)))
-  val namedArgumentCollectedPattern = List(Argument("M", IntValue(intValue.toInt)))
-  val otherNamedArgumentCollectedPattern = List(Argument("N", DoubleValue(doubleValue.toDouble)))
+  val argumentPattern = List(Argument("", StringValue(intValue)))
+  val otherArgumentPattern = List(Argument("", StringValue(doubleValue)))
+  val namedArgumentCollectedPattern = List(Argument("M", StringValue(intValue)))
+  val otherNamedArgumentCollectedPattern = List(Argument("N", StringValue(doubleValue)))
   val optionPattern = List(Option(shortOption,""))
   val otherOption = "-b"
   val otherOptionPattern = List(Option(otherOption,""))

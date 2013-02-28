@@ -97,13 +97,13 @@ class ParsingPatternSuite extends FunSpec {
     val ValidShortArgumentDefaultIntOption = "  %s %s  %s [default: %s].".format(shortOption, capitalArgument, description, intValue)
     it("should parse correctly: '%s'".format(ValidShortArgumentDefaultIntOption)) {
       val opt = PP.parseOption(ValidShortArgumentDefaultIntOption)
-      assert (opt.get == new Option(shortOption, "", 1, IntValue(intValue.toInt)))
+      assert (opt.get == new Option(shortOption, "", 1, StringValue(intValue)))
     }
 
     val ValidShortArgumentDefaultFloatOption = "  %s %s  %s [default: %s].".format(shortOption, capitalArgument, description, doubleValue)
     it("should parse correctly: '%s'".format(ValidShortArgumentDefaultFloatOption)) {
       val opt = PP.parseOption(ValidShortArgumentDefaultFloatOption)
-      assert (opt.get == new Option(shortOption, "", 1, DoubleValue(doubleValue.toDouble)))
+      assert (opt.get == new Option(shortOption, "", 1, StringValue(doubleValue)))
     }
 
     val ValidShortArgumentDefaultPathOption = "  %s %s  %s [default: %s].".format(shortOption, capitalArgument, description, pathValue)
@@ -116,6 +116,30 @@ class ParsingPatternSuite extends FunSpec {
     it("should parse correctly: '%s'".format(ValidShortArgumentDefaultInsensitiveOption)) {
       val opt = PP.parseOption(ValidShortArgumentDefaultInsensitiveOption)
       assert (opt.get == new Option(shortOption, "", 1, StringValue(stringValue)))
+    }
+  }
+
+  describe("parseOptionDescriptions") {
+    val usage = """ usage: prog
+                      -o, --option  <o>
+                      --another <a>  description [default: x]
+                      <a>
+                      <another>  description [default: y]"""
+    it("should parse correctly a simple usage") {
+      assert (PP.parseOptionDescriptions(usage).toList ==
+              List(Option("-o", "--option", 0, StringValue()),
+                   Option("", "--another", 1, StringValue("x"))))
+    }
+
+    val doc ="""
+    -h, --help  Print help message.
+    -o FILE     Output file.
+    --verbose   Verbose mode."""
+    it("should parse options") {
+      assert (PP.parseOptionDescriptions(doc).toList ==
+              List(Option("-h", "--help", 0, StringValue()),
+                   Option("-o", "", 1, StringValue()),
+                   Option("", "--verbose", 0, StringValue())))
     }
   }
 }
