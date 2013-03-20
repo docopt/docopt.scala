@@ -3,15 +3,15 @@ package org.docopt.matching
 import scala.{Option => SOption}
 
 import org.docopt.pattern._
+import org.docopt.utils._
 
 object PatternMatcher {
-  type SPat = Seq[Pattern]
-  type MaybeMatch = SOption[Tuple2[SPat, SPat]]
-  type MaybeChild = SOption[Tuple2[Int, Pattern]]
+  type MaybeMatch = SOption[(SeqPat, SeqPat)]
+  type MaybeChild = SOption[(Int, Pattern)]
 
   def matchPattern(matcher: Pattern,
-                   left: SPat,
-                   collected: SPat = Nil): MaybeMatch = matcher match {
+                   left: SeqPat,
+                   collected: SeqPat = Nil): MaybeMatch = matcher match {
     case child:Argument => matchChildPattern(child, left, collected)
     case child:Command => matchChildPattern(child, left, collected)
     case child:Option => matchChildPattern(child, left, collected)
@@ -23,8 +23,8 @@ object PatternMatcher {
   }
 
   private def matchChildPattern(child: Pattern,
-                                left: SPat,
-                                collected: SPat): MaybeMatch = {
+                                left: SeqPat,
+                                collected: SeqPat): MaybeMatch = {
     (child match {
       case a:Argument => matchArgument(a, left)
       case c:Command => matchCommand(c, left)
@@ -38,7 +38,7 @@ object PatternMatcher {
   }
 
   private def matchArgument(arg: Argument,
-                            left: SPat,
+                            left: SeqPat,
                             index: Int = 0): MaybeChild =
     left match {
       case Nil => None
@@ -47,11 +47,11 @@ object PatternMatcher {
     }
 
   private def collectSameName(arg: ChildPattern,
-                              collected: SPat): SPat = {
+                              collected: SeqPat): SeqPat = {
     // http://stackoverflow.com/questions/11394034/why-scalas-pattern-maching-does-not-work-in-for-loops-for-type-matching
     // http://www.scala-lang.org/node/2187
-    val sameName = (for (a@(_a:ChildPattern) <- collected;
-                         if a.name == arg.name) yield a) toList
+    val sameName = (for (a@(_a:ChildPattern) <- collected
+                         if a.name == arg.name) yield a).toList
 
     def childPatternUpdateValue(child: ChildPattern, newValue: Value) = child match {
       case Argument(n, _) => Argument(n, newValue)
@@ -86,7 +86,7 @@ object PatternMatcher {
   }
 
   private def matchCommand(cmd: Command,
-                           left: SPat,
+                           left: SeqPat,
                            index: Int = 0): MaybeChild =
     left match {
       case Nil => None
@@ -97,7 +97,7 @@ object PatternMatcher {
     }
 
   private def matchOption(opt: Option,
-                          left: SPat,
+                          left: SeqPat,
                           index: Int = 0): MaybeChild =
     left match {
       case Nil => None
@@ -106,16 +106,16 @@ object PatternMatcher {
     }
 
   private def matchRequired(req: Required,
-                            left: SPat,
-                            collected: SPat): MaybeMatch =
+                            left: SeqPat,
+                            collected: SeqPat): MaybeMatch =
     req.children.foldLeft(Some(left, collected):MaybeMatch) {
       case (Some((l, c)), child) => matchPattern(child, l, c)
       case (None, child) => None
     }
 
   private def matchOptional(opt: Optional,
-                            left: SPat,
-                            collected: SPat): MaybeMatch =
+                            left: SeqPat,
+                            collected: SeqPat): MaybeMatch =
     opt.children.foldLeft(Some(left, collected):MaybeMatch) {
       // this case should never happend, but we need to clear the warning
       case (None, child) => None
@@ -125,11 +125,11 @@ object PatternMatcher {
         case Some((l_, c_)) => Some(l_, c_) } }
 
   private def matchOneOrMore(one: OneOrMore,
-                             left: SPat,
-                             collected: SPat): MaybeMatch = {
+                             left: SeqPat,
+                             collected: SeqPat): MaybeMatch = {
     require(one.children.size == 1)
     val child = one.children(0)
-    def whileMatch(p: Pattern, l: SPat, c: SPat): MaybeMatch =
+    def whileMatch(p: Pattern, l: SeqPat, c: SeqPat): MaybeMatch =
       matchPattern(p, l, c) match {
         // first call and did not match anything
         case None if l.size == left.size => None
@@ -143,19 +143,19 @@ object PatternMatcher {
   }
 
   private def matchEither(either: Either,
-                          left: SPat,
-                          collected: SPat): MaybeMatch =
+                          left: SeqPat,
+                          collected: SeqPat): MaybeMatch =
     either.children.foldLeft(None:MaybeMatch) {
       case (maybe, child) => {
         matchPattern(child, left, collected) match {
           // this child doesn't match, keep passing the value
           case None => maybe
           // we match, still have work to do
-          case newMatch:Some[Tuple2[SPat,SPat]] => maybe match {
+          case newMatch:Some[(SeqPat,SeqPat)] => maybe match {
             // if previous childs did not match, we're the new matcher
             case None => newMatch
             // an older child matched, but did it collect more element?
-            case oldMatch:Some[Tuple2[SPat,SPat]] => (
+            case oldMatch:Some[(SeqPat,SeqPat)] => (
               if (newMatch.get._1.size < oldMatch.get._1.size) newMatch
               else oldMatch) } } } }
 }

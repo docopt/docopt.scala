@@ -6,12 +6,10 @@ import org.scalatest.FunSpec
 
 class SingleMatchingPatternSuite extends FunSpec {
   describe("An Argument") {
-    val CombinedargumentPattern = List(Argument(capitalArgument, StringValue(intValue)))
+    val combinedArgumentPattern = List(Argument(capitalArgument, StringValue(intValue)))
     it("should match itself and extract the value") {
-      println(PM.matchPattern(Argument(capitalArgument), argumentPattern))
-      println(CombinedargumentPattern)
       assert (PM.matchPattern(Argument(capitalArgument), argumentPattern) ==
-        Some(Nil, CombinedargumentPattern))
+        Some(Nil, combinedArgumentPattern))
     }
 
     it("shout not match an option") {
@@ -20,13 +18,13 @@ class SingleMatchingPatternSuite extends FunSpec {
 
     it("should match a list of patterns") {
       assert (PM.matchPattern(Argument(capitalArgument), manyPattern) ==
-        Some(otherOptionPattern ::: optionPattern, CombinedargumentPattern))
+        Some(otherOptionPattern ::: optionPattern, combinedArgumentPattern))
     }
 
     it("should match a list of itself and consume only once") {
       assert (PM.matchPattern(Argument(capitalArgument),
                               argumentPattern ::: otherArgumentPattern) ==
-        Some(otherArgumentPattern, CombinedargumentPattern))
+        Some(otherArgumentPattern, combinedArgumentPattern))
     }
   }
 
