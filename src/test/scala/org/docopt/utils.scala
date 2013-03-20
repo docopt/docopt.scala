@@ -18,15 +18,15 @@ class UtilsSuite extends FunSpec {
 class PatternFlatteningSuite extends FunSpec {
   describe("flattenPattern") {
     it("should flatten correctly with no types") {
-      assert(flattenPattern(Required(List(OneOrMore(argumentPattern)) ++
-                                        optionPattern ++
-                                        otherArgumentPattern)) ==
-             argumentPattern ++ optionPattern ++ otherArgumentPattern)
+      assert(flattenPattern(Required(OneOrMore(argumentPattern),
+                                     optionPattern,
+                                     otherArgumentPattern)) ==
+             List(argumentPattern, optionPattern, otherArgumentPattern))
     }
     it("should flatten correctly with types") {
-      assert(flattenPattern(Required(List(Optional(List(AnyOptions()))) ++
-                                        List(Optional(optionPattern))),
-                              List(AnyOptions())) ==
+      assert(flattenPattern(Required(Optional(AnyOptions()),
+                                     Optional(optionPattern)),
+                            List(AnyOptions())) ==
              List(AnyOptions()))
     }
   }

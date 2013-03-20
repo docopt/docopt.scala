@@ -1,4 +1,4 @@
-package org.docopt.matching
+package org.docopt
 
 import scala.{Option => SOption}
 
@@ -17,7 +17,7 @@ object PatternMatcher {
     case child:Option => matchChildPattern(child, left, collected)
     case req:Required => matchRequired(req, left, collected)
     case opt:Optional => matchOptional(opt, left, collected)
-    case opt:AnyOptions => matchOptional(Optional(Nil), left, collected)
+    case opt:AnyOptions => matchOptional(Optional(), left, collected)
     case eit:Either => matchEither(eit, left, collected)
     case orm:OneOrMore => matchOneOrMore(orm, left, collected)
   }
@@ -91,7 +91,7 @@ object PatternMatcher {
     left match {
       case Nil => None
       case Argument(n, StringValue(v)) :: tail if v == cmd.name =>
-        Some(index, Command(cmd.name, BooleanValue(true)))
+        Some(index, Command(cmd.name, BooleanValue(value = true)))
       case (a:Argument) :: tail => None
       case head :: tail => matchCommand(cmd, tail, index+1)
     }

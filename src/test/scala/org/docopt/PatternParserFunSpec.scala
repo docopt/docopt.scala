@@ -1,12 +1,11 @@
-package org.docopt.parsing
+package org.docopt
 
-import org.docopt.parsing.{PatternParser => PP}
+import org.docopt.{PatternParser => PP}
 import org.docopt.pattern._
 import org.docopt.utils._
 import org.scalatest.FunSpec
-import org.scalatest.junit.JUnitRunner
 
-class ParsingPatternSuite extends FunSpec {
+class PatternParserFunSpec extends FunSpec {
   describe("An Argument") {
     // Parsing
     val validArgument = bracketArgument
@@ -149,90 +148,84 @@ class ParsingPatternSuite extends FunSpec {
     val optionalOption = "[ -h ]"
     it("should parse correctly: %s".format(optionalOption)) {
       assert (PP.parsePattern(optionalOption, options) ==
-        Required(List(Optional(List(Option("-h", ""))))))
+        Required(Optional(Option("-h", ""))))
     }
 
     val optionalTwoOption = "[ -h | -v ]"
     it("should parse correctly: %s".format(optionalTwoOption)) {
       assert (PP.parsePattern(optionalTwoOption, options) ==
-        Required(List(Optional(List(Either(List(Option("-h", ""), Option("-v","--verbose"))))))))
+        Required(Optional(Either(Option("-h", ""), Option("-v","--verbose")))))
     }
 
     val optionalTwoOptionEither = "( -h | -v [ --file <f>])"
     it("should parse correctly: %s".format(optionalTwoOptionEither)) {
       assert (PP.parsePattern(optionalTwoOptionEither, options) ==
-        Required(List(Required(List(Either(List(Option("-h", ""),
-          Required(List(Option("-v","--verbose"),
-            Optional(List(Option("-f","--file",1, StringValue("")))))))))))))
+        Required(Required(Either(Option("-h", ""),
+                                 Required(Option("-v","--verbose"),
+                                          Optional(Option("-f","--file",1, StringValue(""))))))))
     }
 
     val complexOptions = "(-h|-v[--file=<f>]N...)"
     it("should parse correctly: %s".format(complexOptions)) {
         assert (PP.parsePattern(complexOptions, options) ==
-          Required(List(Required(List(Either(List(Option("-h", ""),
-                              Required(List(Option("-v", "--verbose"),
-                                            Optional(List(Option("-f", "--file", 1, StringValue("")))),
-                                            OneOrMore(List(Argument("N"))))))))))))
+          Required(Required(Either(Option("-h", ""),
+                                   Required(Option("-v", "--verbose"),
+                                            Optional(Option("-f", "--file", 1, StringValue(""))),
+                                            OneOrMore(Argument("N")))))))
     }
 
     val optionalArgOneOrMany = "[ ARG ... ]"
     it("should parse correctly: %s".format(optionalArgOneOrMany)) {
         assert (PP.parsePattern(optionalArgOneOrMany, options) ==
-                Required(List(Optional(List(OneOrMore(List(Argument("ARG"))))))))
+                Required(Optional(OneOrMore(Argument("ARG")))))
     }
 
     val optionalOptionOrOptionalArg = "[ -h ] [N]"
     it("should parse correctly: %s".format(optionalOptionOrOptionalArg)) {
-        assert (PP.parsePattern(optionalOptionOrOptionalArg, options) ==
-                Required(List(Optional(List(Option("-h",""))),
-                              Optional(List(Argument("N"))))))
+      assert (PP.parsePattern(optionalOptionOrOptionalArg, options) ==
+              Required(Optional(Option("-h","")), Optional(Argument("N"))))
     }
 
     val optionOptionalAny = "-v [options]"
     it("should parse correctly: %s".format(optionOptionalAny)) {
         assert (PP.parsePattern(optionOptionalAny, options) ==
-                Required(List(Option("-v","--verbose"),
-                              Optional(List(AnyOptions())))))
+                Required(Option("-v","--verbose"), Optional(AnyOptions())))
     }
 
     val complexEither = "(N [M | (K | L)] | O P)"
     it("should parse correctly: %s".format(complexEither)) {
         assert (PP.parsePattern(complexEither, options) ==
-          Required(List(Required(List(Either(List(Required(List(Argument("N"),
-                                                           Optional(List(Either(List(Argument("M"),
-                                                            Required(List(Either(List(Argument("K"),
-                                                            Argument("L"))))))))))),
-                   Required(List(Argument("O"), Argument("P"))))))))))
+          Required(Required(Either(Required(Argument("N"),
+                                            Optional(Either(Argument("M"),
+                                                            Required(Either(Argument("K"), Argument("L")))))),
+                                   Required(Argument("O"), Argument("P"))))))
     }
 
     val optionalOptions = "[options]"
     it("should parse correctly: %s".format(optionalOptions)) {
         assert (PP.parsePattern(optionalOptions, options) ==
-          Required(List(Optional(List(AnyOptions())))))
+          Required(Optional(AnyOptions())))
     }
 
     val optionalOptionsAndArg = "[options] A"
     it("should parse correctly: %s".format(optionalOptionsAndArg)) {
         assert (PP.parsePattern(optionalOptionsAndArg, options) ==
-          Required(List(Optional(List(AnyOptions())), Argument("A"))))
+          Required(Optional(AnyOptions()), Argument("A")))
     }
 
     val capitalArg = "ADD"
     it("should parse correctly: %s".format(capitalArg)) {
-        assert (PP.parsePattern(capitalArg, options) ==
-          Required(List(Argument("ADD"))))
+        assert (PP.parsePattern(capitalArg, options) == Required(Argument("ADD")))
     }
 
     val bracketArg= "<arg>"
     it("should parse correctly: %s".format(bracketArg)) {
-        assert (PP.parsePattern(bracketArg, options) ==
-          Required(List(Argument("<arg>"))))
+        assert (PP.parsePattern(bracketArg, options) == Required(Argument("<arg>")))
     }
 
     val command = "arg"
     it("should parse correctly: %s".format(command)) {
-        assert (PP.parsePattern(command, options) ==
-          Required(List(Command("arg"))))
+        assert (PP.parsePattern(command, options) == Required(Command("arg")))
     }
   }
 
@@ -251,26 +244,26 @@ class ParsingPatternSuite extends FunSpec {
 
     it("should parse correctly: %s".format("-h --verbose")) {
         assert (PP.parseArgv("-h --verbose", options) ==
-          List(Option("-h","",0,BooleanValue(true)),
-               Option("-v","--verbose",0,BooleanValue(true))))
+          List(Option("-h","",0,BooleanValue(value = true)),
+               Option("-v","--verbose",0,BooleanValue(value = true))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt")) {
         assert (PP.parseArgv("-h --file f.txt", options) ==
-          List(Option("-h","",0,BooleanValue(true)),
+          List(Option("-h","",0,BooleanValue(value = true)),
                Option("-f","--file",1,StringValue("f.txt"))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt arg")) {
         assert (PP.parseArgv("-h --file f.txt arg", options) ==
-          List(Option("-h","",0,BooleanValue(true)),
+          List(Option("-h","",0,BooleanValue(value = true)),
                Option("-f","--file",1,StringValue("f.txt")),
                Argument("", StringValue("arg"))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt arg arg2")) {
         assert (PP.parseArgv("-h --file f.txt arg arg2", options) ==
-          List(Option("-h","",0,BooleanValue(true)),
+          List(Option("-h","",0,BooleanValue(value = true)),
                Option("-f","--file",1,StringValue("f.txt")),
                Argument("", StringValue("arg")),
                Argument("", StringValue("arg2"))))
@@ -278,7 +271,7 @@ class ParsingPatternSuite extends FunSpec {
 
     it("should parse correctly: %s".format("-h arg -- -v")) {
         assert (PP.parseArgv("-h arg -- -v", options) ==
-          List(Option("-h","",0,BooleanValue(true)),
+          List(Option("-h","",0,BooleanValue(value = true)),
                Argument("", StringValue("arg")),
                Argument("", StringValue("--")),
                Argument("", StringValue("-v"))))
@@ -287,7 +280,7 @@ class ParsingPatternSuite extends FunSpec {
   describe("long options error handling") {
     it("it should intercept a non existant option") {
       intercept[UnconsumedTokensException] {
-        PP.docopt("Usage: prog", "--non-existant", false, "", false)
+        PP.docopt("Usage: prog", "--non-existant", help = false, version = "", optionsFirst = false)
       }
     }
 
@@ -297,7 +290,7 @@ class ParsingPatternSuite extends FunSpec {
   --version
   --verbose"""
       intercept[RuntimeException] {
-        PP.docopt(usage, "--ver", false, "", false)
+        PP.docopt(usage, "--ver", help = false, "", optionsFirst = false)
       }
     }
 
@@ -305,19 +298,19 @@ class ParsingPatternSuite extends FunSpec {
       // since the option is defined to have an argument, the implicit ')' is
       // consumed by the parseOption
       intercept[MissingEnclosureException] {
-        PP.docopt("Usage: prog --conflict\n\n--conflict ARG", "", false, "", false)
+        PP.docopt("Usage: prog --conflict\n\n--conflict ARG", "", help = false, "", optionsFirst = false)
       }
     }
 
     it("it should intercept a reversed conflicting definition") {
       intercept[UnexpectedArgumentException] {
-        PP.docopt("Usage: prog --long=ARG\n\n --long", "", false, "", false)
+        PP.docopt("Usage: prog --long=ARG\n\n --long", "", help = false, "", optionsFirst = false)
       }
     }
 
     it("it should intercept a missing argument") {
       intercept[MissingArgumentException] {
-        PP.docopt("Usage: prog --long ARG\n\n --long ARG", "--long", false, "", false)
+        PP.docopt("Usage: prog --long ARG\n\n --long ARG", "--long", help = false, "", optionsFirst = false)
       }
     }
 
@@ -328,7 +321,7 @@ Usage: prog --derp
 
 Options:
     --derp"""
-        PP.docopt(doc, "--derp=ARG", false, "", false)
+        PP.docopt(doc, "--derp=ARG", help = false, "", optionsFirst = false)
       }
     }
   }
@@ -336,25 +329,25 @@ Options:
   describe("short options error handling") {
     it("it should detect conflicting definitions") {
       intercept[UnparsableOptionException] {
-        PP.docopt("Usage: prog -x\n\n-x this\n-x that", "", false, "", false)
+        PP.docopt("Usage: prog -x\n\n-x this\n-x that", "", help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect undefined options") {
       intercept[UnconsumedTokensException] {
-        PP.docopt("Usage: prog", "-x", false, "", false)
+        PP.docopt("Usage: prog", "-x", help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect conflicting definitions with arguments") {
       intercept[DocoptExitException] {
-        PP.docopt("Usage: prog -x\n\n-x ARG", "", false, "", false)
+        PP.docopt("Usage: prog -x\n\n-x ARG", "", help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect missing arguments") {
       intercept[DocoptExitException] {
-        PP.docopt("Usage: prog -x ARG\n\n-x ARG", "-x", false, "", false)
+        PP.docopt("Usage: prog -x ARG\n\n-x ARG", "-x", help = false, "", optionsFirst = false)
       }
     }
   }
@@ -362,24 +355,24 @@ Options:
   describe("[]|{}|() matching") {
     it("it should detect missing ]") {
       intercept[MissingEnclosureException] {
-        PP.docopt("Usage: prog [a [b]", "", false, "", false)
+        PP.docopt("Usage: prog [a [b]", "", help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect extra )") {
       intercept[UnconsumedTokensException] {
-        PP.docopt("Usage: prog [a [b] ] c )", "", false, "", false)
+        PP.docopt("Usage: prog [a [b] ] c )", "", help = false, "", optionsFirst = false)
       }
     }
   }
 
   describe("double-dash support") {
     it("it should handle correctly '--'") {
-      PP.docopt("Usage: prog [-o] [--] <arg>\n\n-o", "-- -o", false, "", false)
+      PP.docopt("Usage: prog [-o] [--] <arg>\n\n-o", "-- -o", help = false, "", optionsFirst = false)
     }
 
     it("it should handle correctly '--' swapped") {
-      PP.docopt("Usage: prog [-o] [--] <arg>\n\n -o", "-o 1", false, "", false)
+      PP.docopt("Usage: prog [-o] [--] <arg>\n\n -o", "-o 1", help = false, "", optionsFirst = false)
     }
   }
 }

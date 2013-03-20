@@ -15,15 +15,15 @@ package object pattern {
   val description = "Ze description"
 
   // helper for matching
-  val namedArgumentPattern = List(Argument("M"))
-  val otherNamedArgumentPattern = List(Argument("N"))
-  val argumentPattern = List(Argument("", StringValue(intValue)))
-  val otherArgumentPattern = List(Argument("", StringValue(doubleValue)))
-  val namedArgumentCollectedPattern = List(Argument("M", StringValue(intValue)))
-  val otherNamedArgumentCollectedPattern = List(Argument("N", StringValue(doubleValue)))
-  val optionPattern = List(Option(shortOption,""))
+  val namedArgumentPattern = Argument("M")
+  val otherNamedArgumentPattern = Argument("N")
+  val argumentPattern = Argument("", StringValue(intValue))
+  val otherArgumentPattern = Argument("", StringValue(doubleValue))
+  val namedArgumentCollectedPattern = Argument("M", StringValue(intValue))
+  val otherNamedArgumentCollectedPattern = Argument("N", StringValue(doubleValue))
+  val optionPattern = Option(shortOption,"")
   val otherOption = "-b"
-  val otherOptionPattern = List(Option(otherOption,""))
-  val manyPattern = otherOptionPattern ::: optionPattern ::: argumentPattern
-  val RequiredPattern  = List(Required(optionPattern))
+  val otherOptionPattern = Option(otherOption,"")
+  val manyPattern = List(otherOptionPattern, optionPattern, argumentPattern)
+  val RequiredPattern  = Required(optionPattern)
 }

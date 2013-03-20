@@ -1,10 +1,9 @@
-package org.docopt.parsing
+package org.docopt
 
 import scala.util.matching.Regex
 import scala.util.matching.Regex.Match
 import scala.{Option => SOption}
 
-import org.docopt.matching.{PatternMatcher => PM}
 import org.docopt.pattern._
 import org.docopt.utils._
 
@@ -42,13 +41,13 @@ object PatternParser {
 
   def parseOption(optionStr: String): SOption[Option] = {
     stringStrip(optionStr).split("  ").filter(_ != "") match {
-      case Array(option, description) => {
+      case Array(option, optDescription) => {
         val option_ = option.replace(",", " ")
                             .replace("=", " ")
                             .split(" ")
                             .filter(_ != "")
-        // extract short, long, argcount from options
-        val (short, long, argcount) = option_.foldLeft(("","",0)) {
+        // extract short, long, argCount from options
+        val (short, long, argCount) = option_.foldLeft(("","",0)) {
           case (tup, token) => {
             token match {
               case tok if tok startsWith "--" => (tup._1, tok, tup._3) // long option
@@ -57,8 +56,8 @@ object PatternParser {
             }
           }
         }
-        Some(Option(short, long, argcount, if (argcount > 0)
-          parseDefault(description)else BooleanValue(false)))
+        Some(Option(short, long, argCount, if (argCount > 0)
+          parseDefault(optDescription) else BooleanValue(value = false)))
       }
       // TODO(fsaintjacques): remove this lazy hack
       case Array(option) => parseOption(option + "  EmptyDescription")
@@ -75,7 +74,7 @@ object PatternParser {
       (source, (m: Match) => " %s ".format(m.group("delim"))))
     val (tokens_, options_, results) = parseExpr(tokens, options, argv)
     if (tokens_.length > 0) throw new UnconsumedTokensException(tokens_)
-    Required(results.toList)
+    Required(results:_*)
   }
 
   // TODO(fsaintjacques): there is probably a more clean way of using
@@ -86,9 +85,9 @@ object PatternParser {
                            res: SeqPat): ParseRet = toks match {
         case head :: tail if head == "|" =>
           val (toks_, opts_, seq_) = parseSeq(tail, opts, argv)
-          parseExprRecursive(toks_, opts_, res ++ (if (seq_.length > 1) List(Required(seq_.toList)) else seq_))
+          parseExprRecursive(toks_, opts_, res ++ (if (seq_.length > 1) List(Required((seq_):_*)) else seq_))
         case _ =>
-          (toks, opts, if (res.length > 1) List(Either(res.toList)) else res)
+          (toks, opts, if (res.length > 1) List(Either(res:_*)) else res)
       }
     val ret@(tokens_, opts, seq) = parseSeq(tokens, options, argv)
     tokens_ match {
@@ -97,7 +96,7 @@ object PatternParser {
       case head :: tail =>
         parseExprRecursive(tokens_,
                            opts,
-                           if (seq.length > 1) List(Required(seq.toList)) else seq)
+                           if (seq.length > 1) List(Required(seq:_*)) else seq)
     }
   }
 
@@ -110,7 +109,7 @@ object PatternParser {
       val (tokens_, options_, atoms) = parseAtom(tokens, options, argv)
       tokens_ match {
         case h :: tail if h == "..." =>
-          parseSeq(tail, options_, argv, results ++ List(OneOrMore(atoms.toList)))
+          parseSeq(tail, options_, argv, results ++ List(OneOrMore(atoms:_*)))
         case _ =>
           parseSeq(tokens_, options_, argv, results ++ atoms)
       }
@@ -124,14 +123,14 @@ object PatternParser {
       val (tokens_, options_, expr) = parseExpr(tail, options, argv)
       tokens_ match {
         case h :: t if h == ")" =>
-          (t, options_, List(Required(expr.toList)))
+          (t, options_, List(Required(expr:_*)))
         case l:Tokens => throw new MissingEnclosureException(")")
       }
     case head :: tail if (head == "[") =>
       val (tokens_, options_, expr) = parseExpr(tail, options, argv)
       tokens_ match {
         case h :: t if h == "]" =>
-          (t, options_, List(Optional(expr.toList)))
+          (t, options_, List(Optional(expr:_*)))
         case l:Tokens => throw new MissingEnclosureException("]")
       }
     case head :: tail if (head == "options") =>
@@ -141,7 +140,7 @@ object PatternParser {
     case head :: tail if (head != "-" && head != "--"  && head.startsWith("-")) =>
       parseShortOption(tokens, options, argv)
     case head :: tail if ((head.startsWith("<") && head.endsWith(">")) ||
-                          head == head.toUpperCase) =>
+                          head.forall(_.isUpper)) =>
       (tail, options, List(Argument(head)))
     case head :: tail =>
       (tail, options, List(Command(head)))
@@ -165,27 +164,23 @@ object PatternParser {
           val argcount = if (eq == "=") 1 else 0
           val o = Option("", long, argcount)
           val o_ = Option("", long, argcount, if (argcount > 0) StringValue(v)
-                                              else BooleanValue(true))
+                                              else BooleanValue(value = true))
           (tail, options ++ List(o), List(if (argv == true) o_ else o))
         case head :: Nil => {
-          val o@Option(oLong, oShort, oArgcount, oValue) = similar.head
-          // TODO(fsaintjacques): remove var reference.
-          var consumed = false
-          var value = oArgcount match {
-            case 0 if (v != "") =>
-              throw new UnexpectedArgumentException(longToken)
-            case 1 if (v == "" && tail.isEmpty) =>
-              throw new MissingArgumentException(longToken)
-            case 1 if (v == "") => {consumed = true; tail.head }
-            case _ => v
+          val o@Option(oLong, oShort, oArgcount, _) = similar.head
+          val (consumed, value) = oArgcount match {
+            case 0 if (v != "") => throw new UnexpectedArgumentException(longToken)
+            case 1 if (v == "" && tail.isEmpty) => throw new MissingArgumentException(longToken)
+            case 1 if (v == "") => (true, tail.head)
+            case _ => (false, v)
           }
-          val value_ = if (argv == true && value == "") BooleanValue(true)
+          val value_ = if (argv == true && value == "") BooleanValue(value = true)
                        else StringValue(value)
           val o_ = Option(oLong, oShort, oArgcount, value_)
           (if (consumed) tail.tail else tail, options,
            List(if (argv == true) o_ else o))
         }
-        case head :: tail =>
+        case _ =>
           throw new RuntimeException("option %s is not unique: %s".format(long, options))
       }
     }
@@ -207,25 +202,25 @@ object PatternParser {
         similar match {
           case Nil =>
             val o = Option(short, "", 0)
-            val o_ = Option(short, "", 0, BooleanValue(true))
+            val o_ = Option(short, "", 0, BooleanValue(value = true))
             parseShortOptionRecursive(ok, toks, opts ++ List(o), (if (argv == true) o_ else o) :: ret)
           case head :: Nil => {
-            val Option(oShort, oLong, oArgcount, oValue) = similar.head
+            val Option(oShort, oLong, oArgCount, oValue) = similar.head
             var consumed = false
             var stop = false
             // TODO(fsaintjacques): remove var reference.
-            val value:Value = oArgcount match {
-              case 0 => BooleanValue(false)
+            val value:Value = oArgCount match {
+              case 0 => BooleanValue(value = false)
               case 1 if (ok == "" && toks.isEmpty) => throw new MissingArgumentException(short)
               case 1 if (ok == "") => {consumed = true; StringValue(toks.head) }
               case 1 => {stop = true; StringValue(ok.mkString)}
             }
-            val value_ = if (argv == true && value == BooleanValue(false)) BooleanValue(true) else value
+            val value_ = if (argv == true && value == BooleanValue(value = false)) BooleanValue(value = true) else value
             parseShortOptionRecursive(if (stop) "" else ok,
                                       if (consumed) toks.tail else toks,
-                                      options, Option(oShort, oLong, oArgcount, value_) :: ret)
+                                      options, Option(oShort, oLong, oArgCount, value_) :: ret)
           }
-          case h :: t => throw new UnparsableOptionException(short)
+          case head :: tail => throw new UnparsableOptionException(short)
         }
       }
     }
@@ -244,10 +239,10 @@ object PatternParser {
       parseArgvRecursive(Nil, options, optionFirst,
         (for (t <- tokens) yield Argument("", StringValue(t))).toList.reverse ++ ret)
     case head :: _ if head.startsWith("--") =>
-      val (tokens_, options_, longs) = parseLongOption(tokens, options, true)
+      val (tokens_, options_, longs) = parseLongOption(tokens, options, argv = true)
       parseArgvRecursive(tokens_, options_, optionFirst, longs.toList ++ ret)
     case head :: _ if head.startsWith("-") =>
-      val (tokens_, options_, shorts) = parseShortOption(tokens, options, true)
+      val (tokens_, options_, shorts) = parseShortOption(tokens, options, argv = true)
       parseArgvRecursive(tokens_, options_, optionFirst, shorts.toList ++ ret)
     case head :: _ if optionFirst == true =>
       parseArgvRecursive(Nil, options, optionFirst,
@@ -303,7 +298,7 @@ object PatternParser {
 
     // TODO(fsaintjacques): take care of AnyOptions
 
-    PM.matchPattern(fixPattern(pattern), args) match {
+    PatternMatcher.matchPattern(fixPattern(pattern), args) match {
       case None => throw new DocoptExitException("pattern not matched")
       case Some((Nil, collected)) => println(collected)
       case Some((left, collected)) => throw new UnconsumedTokensException(left.map(_.toString))

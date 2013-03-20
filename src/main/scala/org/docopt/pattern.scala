@@ -1,6 +1,5 @@
 package org.docopt.pattern
 
-
 // Values
 abstract class Value { def +(that: Value):Value}
 case class BooleanValue(value: Boolean = false) extends Value {
@@ -45,18 +44,26 @@ abstract class Pattern
 case class Argument(name: String,
                     value: Value = StringValue()) extends Pattern with ChildPattern
 case class Command(name: String,
-                   value: Value = BooleanValue(false)) extends Pattern with ChildPattern
+                   value: Value = BooleanValue(value = false)) extends Pattern with ChildPattern
 case class Option(short: String,
                   long: String,
                   count: Int = 0,
-                  value: Value = BooleanValue(false)) extends Pattern with ChildPattern{
+                  value: Value = BooleanValue(value = false)) extends Pattern with ChildPattern{
   def name: String = if (short != "") short else long
 }
 
-
 // Composed Patterns
 case class Required(children: List[Pattern]) extends Pattern with ParentPattern
+object Required {def apply(children: Pattern*) = new Required(children.toList)}
+
 case class Optional(children: List[Pattern]) extends Pattern with ParentPattern
-case class AnyOptions(children: List[Pattern] = Nil) extends Pattern with ParentPattern
+object Optional {def apply(children: Pattern*) = new Optional(children.toList)}
+
+case class AnyOptions(children: List[Pattern]) extends Pattern with ParentPattern
+object AnyOptions {def apply(children: Pattern*) = new AnyOptions(children.toList)}
+
 case class OneOrMore(children: List[Pattern]) extends Pattern with ParentPattern
+object OneOrMore {def apply(children: Pattern*) = new OneOrMore(children.toList)}
+
 case class Either(children: List[Pattern]) extends Pattern with ParentPattern
+object Either {def apply(children: Pattern*) = new Either(children.toList)}
