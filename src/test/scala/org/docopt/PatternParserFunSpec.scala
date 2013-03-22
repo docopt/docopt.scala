@@ -11,7 +11,7 @@ class PatternParserFunSpec extends FunSpec {
     val validArgument = bracketArgument
     it("should parse correctly: '%s'".format(validArgument)) {
       val arg = PP.parseArgument(validArgument)
-      assert (arg.get == Argument(validArgument, StringValue("")))
+      assert (arg.get == Argument(validArgument))
     }
 
     val ValidArgumentDefault = "%s [default: %s]".format(bracketArgument, stringValue)
@@ -55,37 +55,37 @@ class PatternParserFunSpec extends FunSpec {
     val ValidShortSpaceArgumentOption = "  %s %s  %s".format(shortOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortSpaceArgumentOption)) {
       val opt = PP.parseOption(ValidShortSpaceArgumentOption)
-      assert (opt.get == Option(shortOption, "", 1, StringValue("")))
+      assert (opt.get == Option(shortOption, "", 1, NullValue()))
     }
 
     val ValidShortEqualArgumentOption = "  %s=%s  %s".format(shortOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortEqualArgumentOption)) {
       val opt = PP.parseOption(ValidShortEqualArgumentOption)
-      assert (opt.get == Option(shortOption, "", 1, StringValue("")))
+      assert (opt.get == Option(shortOption, "", 1, NullValue()))
     }
 
     val ValidLongSpaceArgumentOption = "  %s %s  %s".format(longOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidLongSpaceArgumentOption)) {
       val opt = PP.parseOption(ValidLongSpaceArgumentOption)
-      assert (opt.get == Option("", longOption, 1, StringValue("")))
+      assert (opt.get == Option("", longOption, 1, NullValue()))
     }
 
     val ValidShortLongArgumentOption = "  %s %s %s %s  %s.".format(shortOption, capitalArgument, longOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortLongArgumentOption)) {
       val opt = PP.parseOption(ValidShortLongArgumentOption)
-      assert (opt.get == Option(shortOption, longOption, 1, StringValue("")))
+      assert (opt.get == Option(shortOption, longOption, 1, NullValue()))
     }
 
     val ValidShortCommaLongArgumentOption = "  %s %s, %s %s  %s.".format(shortOption, capitalArgument, longOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortCommaLongArgumentOption)) {
       val opt = PP.parseOption(ValidShortCommaLongArgumentOption)
-      assert (opt.get == Option(shortOption, longOption, 1, StringValue("")))
+      assert (opt.get == Option(shortOption, longOption, 1, NullValue()))
     }
 
     val ValidShortCommaLongEqualArgumentOption = "  %s %s, %s=%s  %s.".format(shortOption, capitalArgument, longOption, capitalArgument, description)
     it("should parse correctly: '%s'".format(ValidShortCommaLongEqualArgumentOption)) {
       val opt = PP.parseOption(ValidShortCommaLongEqualArgumentOption)
-      assert (opt.get == Option(shortOption, longOption, 1, StringValue("")))
+      assert (opt.get == Option(shortOption, longOption, 1, NullValue()))
     }
 
     val ValidShortArgumentDefaultOption = "  %s %s  %s [default: %s].".format(shortOption, capitalArgument, description, stringValue)
@@ -138,7 +138,7 @@ class PatternParserFunSpec extends FunSpec {
     it("should parse options") {
       assert (PP.parseOptionDescriptions(doc) ==
               List(Option("-h", "--help", 0),
-                   Option("-o", "", 1, StringValue()),
+                   Option("-o", "", 1, NullValue()),
                    Option("", "--verbose", 0)))
     }
   }
@@ -340,13 +340,13 @@ Options:
     }
 
     it("it should detect conflicting definitions with arguments") {
-      intercept[DocoptExitException] {
+      intercept[MissingEnclosureException] {
         PP.docopt("Usage: prog -x\n\n-x ARG", "", help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect missing arguments") {
-      intercept[DocoptExitException] {
+      intercept[MissingArgumentException] {
         PP.docopt("Usage: prog -x ARG\n\n-x ARG", "-x", help = false, "", optionsFirst = false)
       }
     }

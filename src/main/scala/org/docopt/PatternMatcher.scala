@@ -17,12 +17,12 @@ object PatternMatcher {
     case child:Option => matchChildPattern(child, left, collected)
     case req:Required => matchRequired(req, left, collected)
     case opt:Optional => matchOptional(opt, left, collected)
-    case opt:AnyOptions => matchOptional(Optional(), left, collected)
+    case opt:AnyOptions => matchOptional(Optional(opt.children), left, collected)
     case eit:Either => matchEither(eit, left, collected)
     case orm:OneOrMore => matchOneOrMore(orm, left, collected)
   }
 
-  private def matchChildPattern(child: Pattern,
+  private def matchChildPattern(child: ChildPattern,
                                 left: SeqPat,
                                 collected: SeqPat): MaybeMatch = {
     (child match {
@@ -33,7 +33,7 @@ object PatternMatcher {
     }) map {
       case (pos, matched:ChildPattern) =>
         (left.slice(0, pos) ++ left.slice(pos+1, left.length),
-         collectSameName(matched, collected))
+         collectSameName(matched, child.value, collected))
     }
   }
 
@@ -46,26 +46,30 @@ object PatternMatcher {
       case head :: tail => matchArgument(arg, tail, index+1)
     }
 
-  private def collectSameName(arg: ChildPattern,
+  private def collectSameName(matched: ChildPattern,
+                              originalValue: Value,
                               collected: SeqPat): SeqPat = {
     // http://stackoverflow.com/questions/11394034/why-scalas-pattern-maching-does-not-work-in-for-loops-for-type-matching
     // http://www.scala-lang.org/node/2187
     val sameName = (for (a@(_a:ChildPattern) <- collected
-                         if a.name == arg.name) yield a).toList
+                         if a.name == matched.name) yield a).toList
 
     def childPatternUpdateValue(child: ChildPattern, newValue: Value) = child match {
       case Argument(n, _) => Argument(n, newValue)
       case Command(n, _) => Command(n, newValue)
       case Option(s,l,a,_) => Option(s, l, a, newValue)
     }
+
+    val latestValue = if (sameName.isEmpty) originalValue else sameName.head.value
+
     // TODO(fsaintjacques): this is nasty branching.
-    arg.value match {
+    latestValue match {
       // we must increment the match or set a new to 0
       case IntValue(_) =>
         sameName match {
           // nobody found if match, don't touch anything.
           case Nil =>
-            collected ++ List(childPatternUpdateValue(arg, IntValue(1)))
+            collected ++ List(childPatternUpdateValue(matched, IntValue(1)))
           case head :: tail => head.value match {
             case IntValue(i) =>
               childPatternUpdateValue(head, IntValue(1 + i)) :: tail
@@ -75,13 +79,15 @@ object PatternMatcher {
       case ManyStringValue(s) => List
         sameName match {
           case Nil =>
-            collected ++ List(childPatternUpdateValue(arg, arg.value))
-          case head :: tail => head.value match {
+            collected ++ List(childPatternUpdateValue(matched, matched.value match {case StringValue(v_) => ManyStringValue(List(v_)) case x => x}))
+          case head :: tail => matched.value match {
             case ManyStringValue(s_) =>
               childPatternUpdateValue(head, ManyStringValue(s ++ s_)) :: tail
+            case StringValue(s_) =>
+              childPatternUpdateValue(head, ManyStringValue(s ++ List(s_))) :: tail
           }
         }
-      case _ => collected ++ List(childPatternUpdateValue(arg, arg.value))
+      case _ => collected ++ List(childPatternUpdateValue(matched, matched.value))
     }
   }
 

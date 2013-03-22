@@ -12,26 +12,11 @@ object PatternParser {
   type Tokens = List[String]
   type ParseRet = (Tokens, SeqOpt, SeqPat)
 
-  def parseValue(value: String): Value = {
-    val intPattern = """^[0-9]+$""".r
-    val doublePattern = """^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$""".r
-    val booleanPattern = """^(?i)(true|false)$""".r
-
-    if (intPattern.findFirstIn(value).isDefined)
-      IntValue(value.toInt)
-    else if (doublePattern.findFirstIn(value).isDefined)
-      DoubleValue(value.toDouble)
-    else if (booleanPattern.findFirstIn(value).isDefined)
-      BooleanValue(value.toBoolean)
-    else
-      StringValue(value)
-  }
-
   def parseDefault(default: String): Value = {
     val defaultPattern = """\[(?i)default: (.*)\]""".r
     defaultPattern.findFirstMatchIn(default) match {
       case Some(defaultPattern(v)) => StringValue(v)
-      case None => StringValue()
+      case None => NullValue()
     }
   }
 
@@ -146,6 +131,7 @@ object PatternParser {
       (tail, options, List(Command(head)))
     }
 
+  // TODO(fsaintjacques): change signature to modify options
   def parseLongOption(tokens: Tokens,
                       options: SeqOpt,
                       argv: Boolean = false): ParseRet = tokens match {
@@ -205,20 +191,13 @@ object PatternParser {
             val o_ = Option(short, "", 0, BooleanValue(value = true))
             parseShortOptionRecursive(ok, toks, opts ++ List(o), (if (argv == true) o_ else o) :: ret)
           case head :: Nil => {
-            val Option(oShort, oLong, oArgCount, oValue) = similar.head
-            var consumed = false
-            var stop = false
-            // TODO(fsaintjacques): remove var reference.
-            val value:Value = oArgCount match {
-              case 0 => BooleanValue(value = false)
-              case 1 if (ok == "" && toks.isEmpty) => throw new MissingArgumentException(short)
-              case 1 if (ok == "") => {consumed = true; StringValue(toks.head) }
-              case 1 => {stop = true; StringValue(ok.mkString)}
+            val Option(s, l, c, v) = similar.head
+            c match {
+              case 0 => parseShortOptionRecursive(ok, toks, options, Option(s,l,c,BooleanValue(value = if (argv == true) true else false)) :: ret)
+              case 1 if (ok == Nil && toks.isEmpty) => throw new MissingArgumentException(short)
+              case 1 if (ok == Nil) => parseShortOptionRecursive(ok, toks.tail, options, Option(s,l,c, StringValue(toks.head)) :: ret)
+              case 1 => parseShortOptionRecursive("", toks, options, Option(s,l,c,StringValue(ok.mkString)) :: ret)
             }
-            val value_ = if (argv == true && value == BooleanValue(value = false)) BooleanValue(value = true) else value
-            parseShortOptionRecursive(if (stop) "" else ok,
-                                      if (consumed) toks.tail else toks,
-                                      options, Option(oShort, oLong, oArgCount, value_) :: ret)
           }
           case head :: tail => throw new UnparsableOptionException(short)
         }
@@ -261,7 +240,7 @@ object PatternParser {
     source.split("\\s+").filter(_ != "").toList
 
   // keep only the Usage: part, remove everything after
-  private def printableUsage(doc: String): String = {
+  def printableUsage(doc: String): String = {
     val usages = """((?i)usage:)""".r.split(doc)
     usages.length match {
       case n if n < 2 =>
@@ -272,11 +251,11 @@ object PatternParser {
     }
   }
 
-  private def formalUsage(doc: String): String = {
+  def formalUsage(doc: String): String = {
     val words = doc.split("\\s+")
-    val programName = words(0)
+    val programName = words.head
     "( " +
-    words.slice(1, words.size).map(x => if (x == programName) ") | (" else x).mkString(" ") +
+    words.tail.map(x => if (x == programName) ") | (" else x).mkString(" ") +
     " )"
   }
 
@@ -284,23 +263,16 @@ object PatternParser {
              argv: String = "",
              help: Boolean = true,
              version: String = "",
-             optionsFirst: Boolean = false) {
+             optionsFirst: Boolean = false): SeqPat = {
     val usage = formalUsage(printableUsage(doc))
-    println("usage: " + usage)
     val options = parseOptionDescriptions(doc)
-    println("options: " + options)
-    val pattern = parsePattern(usage, options)
-    println("pattern: " + pattern)
+    val pattern = fixPattern(parsePattern(usage, options), options)
     val args = parseArgv(argv, options, optionsFirst)
-    println("args: " + args)
     val patternOptions = Set(flattenPattern(Option("","")):_*)
-    println("pattern_options: " + patternOptions)
 
-    // TODO(fsaintjacques): take care of AnyOptions
-
-    PatternMatcher.matchPattern(fixPattern(pattern), args) match {
+    PatternMatcher.matchPattern(pattern, args) match {
       case None => throw new DocoptExitException("pattern not matched")
-      case Some((Nil, collected)) => println(collected)
+      case Some((Nil, collected)) => flattenPattern(pattern) ++ collected
       case Some((left, collected)) => throw new UnconsumedTokensException(left.map(_.toString))
   }
 }
