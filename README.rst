@@ -1,4 +1,4 @@
-``docopt.scala`` is a JVM implementation docopt
+``docopt.scala`` is a JVM implementation of docopt
 ===============================================
 
 `docopt http://docopt.org/` language definition can be found on the official webpage.
