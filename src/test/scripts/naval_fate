@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+CLASSPATH=./target/test-classes:./target/classes:~/.m2/repository:~/.m2/repository/org/scala-lang/scala-library/2.10.0/scala-library-2.10.0.jar
+java -cp $CLASSPATH org.docopt.NavalFate $@
