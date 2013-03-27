@@ -53,13 +53,13 @@ object PatternParser {
 
   def parsePattern(source: String,
                    options: SeqOpt,
-                   argv: Boolean = false): Pattern = {
+                   argv: Boolean = false): (SeqOpt, Pattern) = {
     val tokenizeRegex = new Regex("""([\[\]\(\)\|]|\.\.\.)""", "delim")
     val tokens = tokenStream(tokenizeRegex replaceAllIn
       (source, (m: Match) => " %s ".format(m.group("delim"))))
     val (tokens_, options_, results) = parseExpr(tokens, options, argv)
     if (tokens_.length > 0) throw new UnconsumedTokensException(tokens_)
-    Required(results:_*)
+    (options_, Required(results:_*))
   }
 
   // TODO(fsaintjacques): there is probably a more clean way of using
@@ -148,7 +148,7 @@ object PatternParser {
       similar match {
         case Nil =>
           val argcount = if (eq == "=") 1 else 0
-          val o = Option("", long, argcount)
+          val o = Option("", long, argcount, if (argcount > 0) NullValue(null) else BooleanValue(false))
           val o_ = Option("", long, argcount, if (argcount > 0) StringValue(v)
                                               else BooleanValue(value = true))
           (tail, options ++ List(o), List(if (argv == true) o_ else o))
@@ -195,8 +195,9 @@ object PatternParser {
             c match {
               case 0 => parseShortOptionRecursive(ok, toks, options, Option(s,l,c,BooleanValue(value = if (argv == true) true else false)) :: ret)
               case 1 if (ok == Nil && toks.isEmpty) => throw new MissingArgumentException(short)
-              case 1 if (ok == Nil) => parseShortOptionRecursive(ok, toks.tail, options, Option(s,l,c, StringValue(toks.head)) :: ret)
-              case 1 => parseShortOptionRecursive("", toks, options, Option(s,l,c,StringValue(ok.mkString)) :: ret)
+              case 1 if (ok == Nil) => parseShortOptionRecursive(ok, toks.tail, options, Option(s,l,c, if (argv) StringValue(toks.head) else v) :: ret)
+              case 1 => parseShortOptionRecursive("", toks, options, Option(s,l,c, if (argv)
+                                                                            StringValue(ok.mkString) else v) :: ret)
             }
           }
           case head :: tail => throw new UnparsableOptionException(short)
@@ -212,15 +213,15 @@ object PatternParser {
   private def parseArgvRecursive(tokens: Tokens,
                                  options: SeqOpt,
                                  optionFirst: Boolean,
-                                 ret: List[Pattern] = Nil): SeqPat = tokens match {
-    case Nil => ret.reverse
+                                 ret: List[Pattern] = Nil): (SeqOpt, SeqPat) = tokens match {
+    case Nil => (options, ret.reverse)
     case head :: _ if head == "--" =>
       parseArgvRecursive(Nil, options, optionFirst,
         (for (t <- tokens) yield Argument("", StringValue(t))).toList.reverse ++ ret)
     case head :: _ if head.startsWith("--") =>
       val (tokens_, options_, longs) = parseLongOption(tokens, options, argv = true)
       parseArgvRecursive(tokens_, options_, optionFirst, longs.toList ++ ret)
-    case head :: _ if head.startsWith("-") =>
+    case head :: _ if head.startsWith("-") && head != "-" =>
       val (tokens_, options_, shorts) = parseShortOption(tokens, options, argv = true)
       parseArgvRecursive(tokens_, options_, optionFirst, shorts.toList ++ ret)
     case head :: _ if optionFirst == true =>
@@ -266,13 +267,13 @@ object PatternParser {
              optionsFirst: Boolean = false): SeqPat = {
     val usage = formalUsage(printableUsage(doc))
     val options = parseOptionDescriptions(doc)
-    val pattern = fixPattern(parsePattern(usage, options), options)
-    val args = parseArgv(argv, options, optionsFirst)
-    val patternOptions = Set(flattenPattern(Option("","")):_*)
+    val (options_, pattern) = parsePattern(usage, options)
+    val pattern_ = fixPattern(pattern, options_)
+    val (options__, args) = parseArgv(argv, options_, optionsFirst)
 
-    PatternMatcher.matchPattern(pattern, args) match {
+    PatternMatcher.matchPattern(pattern_, args) match {
       case None => throw new DocoptExitException("pattern not matched")
-      case Some((Nil, collected)) => flattenPattern(pattern) ++ collected
+      case Some((Nil, collected)) => flattenPattern(fixPattern(pattern, options__)) ++ collected
       case Some((left, collected)) => throw new UnconsumedTokensException(left.map(_.toString))
   }
 }
