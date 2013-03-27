@@ -148,84 +148,89 @@ class PatternParserFunSpec extends FunSpec {
     val optionalOption = "[ -h ]"
     it("should parse correctly: %s".format(optionalOption)) {
       assert (PP.parsePattern(optionalOption, options) ==
-        Required(Optional(Option("-h", ""))))
+        (options,
+         Required(Optional(Option("-h", "")))))
     }
 
     val optionalTwoOption = "[ -h | -v ]"
     it("should parse correctly: %s".format(optionalTwoOption)) {
       assert (PP.parsePattern(optionalTwoOption, options) ==
-        Required(Optional(Either(Option("-h", ""), Option("-v","--verbose")))))
+        (options,
+         Required(Optional(Either(Option("-h", ""), Option("-v","--verbose"))))))
     }
 
     val optionalTwoOptionEither = "( -h | -v [ --file <f>])"
     it("should parse correctly: %s".format(optionalTwoOptionEither)) {
       assert (PP.parsePattern(optionalTwoOptionEither, options) ==
-        Required(Required(Either(Option("-h", ""),
-                                 Required(Option("-v","--verbose"),
-                                          Optional(Option("-f","--file",1, StringValue(""))))))))
+        (options,
+         Required(Required(Either(Option("-h", ""),
+                                  Required(Option("-v","--verbose"),
+                                           Optional(Option("-f","--file",1, StringValue("")))))))))
     }
 
     val complexOptions = "(-h|-v[--file=<f>]N...)"
     it("should parse correctly: %s".format(complexOptions)) {
-        assert (PP.parsePattern(complexOptions, options) ==
-          Required(Required(Either(Option("-h", ""),
-                                   Required(Option("-v", "--verbose"),
-                                            Optional(Option("-f", "--file", 1, StringValue(""))),
-                                            OneOrMore(Argument("N")))))))
+      assert (PP.parsePattern(complexOptions, options) ==
+        (options,
+         Required(Required(Either(Option("-h", ""),
+                                  Required(Option("-v", "--verbose"),
+                                           Optional(Option("-f", "--file", 1, StringValue(""))),
+                                           OneOrMore(Argument("N"))))))))
     }
 
     val optionalArgOneOrMany = "[ ARG ... ]"
     it("should parse correctly: %s".format(optionalArgOneOrMany)) {
-        assert (PP.parsePattern(optionalArgOneOrMany, options) ==
-                Required(Optional(OneOrMore(Argument("ARG")))))
+     assert (PP.parsePattern(optionalArgOneOrMany, options) ==
+       (options, Required(Optional(OneOrMore(Argument("ARG"))))))
     }
 
     val optionalOptionOrOptionalArg = "[ -h ] [N]"
     it("should parse correctly: %s".format(optionalOptionOrOptionalArg)) {
       assert (PP.parsePattern(optionalOptionOrOptionalArg, options) ==
-              Required(Optional(Option("-h","")), Optional(Argument("N"))))
+        (options, Required(Optional(Option("-h","")), Optional(Argument("N")))))
     }
 
     val optionOptionalAny = "-v [options]"
     it("should parse correctly: %s".format(optionOptionalAny)) {
-        assert (PP.parsePattern(optionOptionalAny, options) ==
-                Required(Option("-v","--verbose"), Optional(AnyOptions())))
+      assert (PP.parsePattern(optionOptionalAny, options) ==
+        (options, Required(Option("-v","--verbose"), Optional(AnyOptions()))))
     }
 
     val complexEither = "(N [M | (K | L)] | O P)"
     it("should parse correctly: %s".format(complexEither)) {
-        assert (PP.parsePattern(complexEither, options) ==
-          Required(Required(Either(Required(Argument("N"),
-                                            Optional(Either(Argument("M"),
-                                                            Required(Either(Argument("K"), Argument("L")))))),
-                                   Required(Argument("O"), Argument("P"))))))
+      assert (PP.parsePattern(complexEither, options) ==
+        (options,
+         Required(Required(Either(Required(Argument("N"),
+                                           Optional(Either(Argument("M"),
+                                                           Required(Either(Argument("K"), Argument("L")))))),
+                                  Required(Argument("O"), Argument("P")))))))
     }
 
     val optionalOptions = "[options]"
     it("should parse correctly: %s".format(optionalOptions)) {
-        assert (PP.parsePattern(optionalOptions, options) ==
-          Required(Optional(AnyOptions())))
+      assert (PP.parsePattern(optionalOptions, options) ==
+        (options, Required(Optional(AnyOptions()))))
     }
 
     val optionalOptionsAndArg = "[options] A"
     it("should parse correctly: %s".format(optionalOptionsAndArg)) {
-        assert (PP.parsePattern(optionalOptionsAndArg, options) ==
-          Required(Optional(AnyOptions()), Argument("A")))
+      assert (PP.parsePattern(optionalOptionsAndArg, options) ==
+        (options, Required(Optional(AnyOptions()), Argument("A"))))
     }
 
     val capitalArg = "ADD"
     it("should parse correctly: %s".format(capitalArg)) {
-        assert (PP.parsePattern(capitalArg, options) == Required(Argument("ADD")))
+      assert (PP.parsePattern(capitalArg, options) == (options, Required(Argument("ADD"))))
     }
 
     val bracketArg= "<arg>"
     it("should parse correctly: %s".format(bracketArg)) {
-        assert (PP.parsePattern(bracketArg, options) == Required(Argument("<arg>")))
+      assert (PP.parsePattern(bracketArg, options) == (options, Required(Argument("<arg>"))))
     }
 
     val command = "arg"
     it("should parse correctly: %s".format(command)) {
-        assert (PP.parsePattern(command, options) == Required(Command("arg")))
+      assert (PP.parsePattern(command, options) == (options, Required(Command("arg"))))
     }
   }
 
@@ -234,47 +239,52 @@ class PatternParserFunSpec extends FunSpec {
                        Option("-v", "--verbose"),
                        Option("-f", "--file", 1))
     it("should parse correctly: %s".format("")) {
-        assert (PP.parseArgv("", options) == Nil)
+        assert (PP.parseArgv("", options) == (options, Nil))
     }
 
     it("should parse correctly: %s".format("-h")) {
         assert (PP.parseArgv("-h", options) ==
-          List(Option("-h","",0,BooleanValue(value = true))))
+          (options, List(Option("-h","",0,BooleanValue(value = true)))))
     }
 
     it("should parse correctly: %s".format("-h --verbose")) {
         assert (PP.parseArgv("-h --verbose", options) ==
-          List(Option("-h","",0,BooleanValue(value = true)),
-               Option("-v","--verbose",0,BooleanValue(value = true))))
+                (options,
+                 List(Option("-h","",0,BooleanValue(value = true)),
+                      Option("-v","--verbose",0,BooleanValue(value = true)))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt")) {
         assert (PP.parseArgv("-h --file f.txt", options) ==
-          List(Option("-h","",0,BooleanValue(value = true)),
-               Option("-f","--file",1,StringValue("f.txt"))))
+                (options,
+                  List(Option("-h","",0,BooleanValue(value = true)),
+                       Option("-f","--file",1,StringValue("f.txt")))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt arg")) {
         assert (PP.parseArgv("-h --file f.txt arg", options) ==
-          List(Option("-h","",0,BooleanValue(value = true)),
-               Option("-f","--file",1,StringValue("f.txt")),
-               Argument("", StringValue("arg"))))
+                (options,
+                  List(Option("-h","",0,BooleanValue(value = true)),
+                       Option("-f","--file",1,StringValue("f.txt")),
+                       Argument("", StringValue("arg")))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt arg arg2")) {
         assert (PP.parseArgv("-h --file f.txt arg arg2", options) ==
-          List(Option("-h","",0,BooleanValue(value = true)),
-               Option("-f","--file",1,StringValue("f.txt")),
-               Argument("", StringValue("arg")),
-               Argument("", StringValue("arg2"))))
+                (options,
+                  List(Option("-h","",0,BooleanValue(value = true)),
+                       Option("-f","--file",1,StringValue("f.txt")),
+                       Argument("", StringValue("arg")),
+                       Argument("", StringValue("arg2")))))
     }
 
     it("should parse correctly: %s".format("-h arg -- -v")) {
         assert (PP.parseArgv("-h arg -- -v", options) ==
-          List(Option("-h","",0,BooleanValue(value = true)),
-               Argument("", StringValue("arg")),
-               Argument("", StringValue("--")),
-               Argument("", StringValue("-v"))))
+                (options,
+                  List(Option("-h","",0,BooleanValue(value = true)),
+                       Argument("", StringValue("arg")),
+                       Argument("", StringValue("--")),
+                       Argument("", StringValue("-v")))))
     }
   }
   describe("long options error handling") {

@@ -907,3 +907,61 @@ $ prog -pHOME
 r"""Usage: foo (--xx=x|--yy=y)..."""
 $ prog --xx=1 --yy=2
 {"--xx": ["1"], "--yy": ["2"]}
+
+#
+# POSIXly correct tokenization
+#
+
+r"""usage: prog [<input file>]"""
+$ prog f.txt
+{"<input file>": "f.txt"}
+
+r"""usage: prog [--input=<file name>]..."""
+$ prog --input a.txt --input=b.txt
+{"--input": ["a.txt", "b.txt"]}
+
+#
+# Issue 85: `[options]` shourtcut with multiple subcommands
+#
+
+r"""usage: prog good [options]
+           prog fail [options]
+
+--loglevel=N
+
+"""
+$ prog fail --loglevel 5
+{"--loglevel": "5", "fail": true, "good": false}
+
+#
+# Usage-section syntax
+#
+
+r"""usage:prog --foo"""
+$ prog --foo
+{"--foo": true}
+
+r"""PROGRAM USAGE: prog --foo"""
+$ prog --foo
+{"--foo": true}
+
+r"""Usage: prog --foo
+           prog --bar
+NOT PART OF SECTION"""
+$ prog --foo
+{"--foo": true, "--bar": false}
+
+r"""Usage:
+ prog --foo
+ prog --bar
+
+NOT PART OF SECTION"""
+$ prog --foo
+{"--foo": true, "--bar": false}
+
+r"""Usage:
+ prog --foo
+ prog --bar
+NOT PART OF SECTION"""
+$ prog --foo
+{"--foo": true, "--bar": false}
