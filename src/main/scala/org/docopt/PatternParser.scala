@@ -129,8 +129,7 @@ object PatternParser {
           case Nil =>
             val argcount = valueName match { case None => 0 case Some(_) => 1 }
             val o = Option("", long, argcount, if (argcount > 0) NullValue(null) else BooleanValue(false))
-            val o_ = Option("", long, argcount, if (argcount > 0) StringValue(valueName.get)
-                                                else BooleanValue(value = true))
+            val o_ = Option("", long, argcount, if (argcount > 0) StringValue(valueName.get) else BooleanValue(true))
             (tail, options ++ List(o), List(if (argv == true) o_ else o))
           case head :: Nil => {
             val o@Option(oLong, oShort, oArgcount, _) = similar.head
