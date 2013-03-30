@@ -116,34 +116,24 @@ object PatternParser {
   def parseLongOption(tokens: Tokens, options: SeqOpt, argv: Boolean = false): ParseRet =
     tokens match {
       case longToken :: tail => {
-        val (long, valueName) = longToken.split("=") match {
-          case Array(option) => (option, None)
-          case Array(option, valueName) => (option, Some(valueName))
-          case _ => throw new UnparsableOptionException(longToken)
-        }
-        val sameName = options.filter(_.long == long)
-        val similar = if (argv == true && sameName.isEmpty)
-                        options.filter(_.long.startsWith(long))
-                      else sameName
-        similar match {
+        val (long, valueName) = extractLongOptionValue(longToken)
+        options.filter(_.long == long) match {
           case Nil =>
             val argcount = valueName match { case None => 0 case Some(_) => 1 }
             val o = Option("", long, argcount, if (argcount > 0) NullValue(null) else BooleanValue(false))
             val o_ = Option("", long, argcount, if (argcount > 0) StringValue(valueName.get) else BooleanValue(true))
             (tail, options ++ List(o), List(if (argv == true) o_ else o))
           case head :: Nil => {
-            val o@Option(oLong, oShort, oArgcount, _) = similar.head
+            val o@Option(oLong, oShort, oArgcount, _) = head
             val (consumed, value) = oArgcount match {
               case 0 if valueName.isDefined => throw new UnexpectedArgumentException(longToken)
               case 1 if (valueName.isEmpty  && tail.isEmpty) => throw new MissingArgumentException(longToken)
               case 1 if valueName.isEmpty  => (true, tail.head)
               case _ => (false, valueName.getOrElse(""))
             }
-            val value_ = if (argv == true && value == "") BooleanValue(value = true)
-                         else StringValue(value)
+            val value_ = if (argv == true && value == "") BooleanValue(value = true) else StringValue(value)
             val o_ = Option(oLong, oShort, oArgcount, value_)
-            (if (consumed) tail.tail else tail, options,
-             List(if (argv == true) o_ else o))
+            (if (consumed) tail.tail else tail, options, List(if (argv == true) o_ else o))
           }
           case _ =>
             throw new RuntimeException("option %s is not unique: %s".format(long, options))
@@ -179,8 +169,56 @@ object PatternParser {
     parseShortOptionRecursive(tokens.head.substring(1), tokens.tail, options, Nil)
   }
 
+  private def extractLongOptionValue(longOption: String) =
+    if (longOption.exists(_ == '=')) {
+      try {
+      val Array(long, value) = longOption.split("=")
+        (long, Some(value))
+      } catch {
+        case _:Throwable => throw new UnparsableOptionException(longOption)
+      }
+
+    } else (longOption, None)
+
+
+  private def expandPartialLongOption(longOption: String, options: SeqOpt): (String,  SOption[String]) = {
+    val (long, value) = extractLongOptionValue(longOption)
+    if (options.exists(_.long == long))
+      (long, value)
+    else
+      options.filter(_.long.startsWith(long)) match {
+        case Nil => (long, value)
+        case option :: Nil => (option.long, value)
+        case option :: tail => throw new RuntimeException("option %s is not unique: %s".format (longOption, options))
+      }
+  }
+
+  private def isLongOption(long: String) = long match {
+    case "--" => false
+    case x if x.startsWith("--") => true
+    case _ => false
+  }
+
+  private def clarifyLongOptionAmbiguities(argv: Tokens, options: SeqOpt): Tokens = argv match {
+    case Nil => Nil
+    case "--" :: tail => argv
+    case head :: tail if isLongOption(head) =>
+      val (long, value) = expandPartialLongOption(head, options)
+      options.filter(_.long == long) match {
+        case Nil => head :: clarifyLongOptionAmbiguities(tail, options)
+        case Option(_, l, c, v) :: _ => c match {
+          case 0 if value.isDefined => throw new UnexpectedArgumentException(long)
+          case 0 => long :: clarifyLongOptionAmbiguities(tail, options)
+          case 1 if value.isDefined => (long + "=" + value.get) :: clarifyLongOptionAmbiguities(tail, options)
+          case 1 if tail.isEmpty => throw new MissingArgumentException(long)
+          case 1 => (long + "=" + tail.head.mkString("")) :: clarifyLongOptionAmbiguities(tail.drop(1), options)
+        }
+      }
+    case head :: tail => head :: clarifyLongOptionAmbiguities(tail, options)
+  }
+
   def parseArgv(argv: String, options: SeqOpt, optionFirst:Boolean = false) =
-    parseArgvRecursive(tokenStream(argv), options, optionFirst)
+    parseArgvRecursive(clarifyLongOptionAmbiguities(tokenStream(argv), options), options, optionFirst)
 
   private def parseArgvRecursive(tokens: Tokens, options: SeqOpt, optionFirst: Boolean, ret: List[Pattern] = Nil): (SeqOpt, SeqPat) =
     tokens match {
