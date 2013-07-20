@@ -49,10 +49,8 @@ object PatternMatcher {
   private def collectSameName(matched: ChildPattern,
                               originalValue: Value,
                               collected: SeqPat): SeqPat = {
-    // http://stackoverflow.com/questions/11394034/why-scalas-pattern-maching-does-not-work-in-for-loops-for-type-matching
-    // http://www.scala-lang.org/node/2187
-    val sameName = (for (a@(_a:ChildPattern) <- collected
-                         if a.name == matched.name) yield a).toList
+    val (psameName, nonSameName) = collected.partition { case a:ChildPattern => (a.name == matched.name) }
+    val sameName = psameName.asInstanceOf[Seq[Pattern with ChildPattern]]
 
     def childPatternUpdateValue(child: ChildPattern, newValue: Value) = child match {
       case Argument(n, _) => Argument(n, newValue)
@@ -72,7 +70,7 @@ object PatternMatcher {
             collected ++ List(childPatternUpdateValue(matched, IntValue(1)))
           case head :: tail => head.value match {
             case IntValue(i) =>
-              childPatternUpdateValue(head, IntValue(1 + i)) :: tail
+              nonSameName ++ (childPatternUpdateValue(head, IntValue(1 + i)) :: tail)
           }
         }
       // we must update the list or start a new one.
@@ -82,9 +80,9 @@ object PatternMatcher {
             collected ++ List(childPatternUpdateValue(matched, matched.value match {case StringValue(v_) => ManyStringValue(List(v_)) case x => x}))
           case head :: tail => matched.value match {
             case ManyStringValue(s_) =>
-              childPatternUpdateValue(head, ManyStringValue(s ++ s_)) :: tail
+              nonSameName ++ (childPatternUpdateValue(head, ManyStringValue(s ++ s_)) :: tail)
             case StringValue(s_) =>
-              childPatternUpdateValue(head, ManyStringValue(s ++ List(s_))) :: tail
+              nonSameName ++ (childPatternUpdateValue(head, ManyStringValue(s ++ List(s_))) :: tail)
           }
         }
       case _ => collected ++ List(childPatternUpdateValue(matched, matched.value))
