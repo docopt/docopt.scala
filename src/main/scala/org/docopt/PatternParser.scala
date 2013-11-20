@@ -171,8 +171,9 @@ object PatternParser {
 
   private def extractLongOptionValue(longOption: String) =
     if (longOption.exists(_ == '=')) {
+      val Splitter = """^(.*?)=(.*)$""".r
       try {
-      val Array(long, value) = longOption.split("=")
+        val Splitter(long, value) = longOption //val Array(long, value) = longOption.split("=")
         (long, Some(value))
       } catch {
         case _:Throwable => throw new UnparsableOptionException(longOption)
