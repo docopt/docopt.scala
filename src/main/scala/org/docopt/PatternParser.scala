@@ -219,7 +219,7 @@ object PatternParser {
   }
 
   def parseArgv(argv: String, options: SeqOpt, optionFirst:Boolean = false) =
-    parseArgvRecursive(clarifyLongOptionAmbiguities(tokenStream(argv), options), options, optionFirst)
+    parseArgvRecursive(clarifyLongOptionAmbiguities(tokenStream(argv, tokenizer = """\t+"""), options), options, optionFirst)
 
   private def parseArgvRecursive(tokens: Tokens, options: SeqOpt, optionFirst: Boolean, ret: List[Pattern] = Nil): (SeqOpt, SeqPat) =
     tokens match {
@@ -241,8 +241,8 @@ object PatternParser {
           option <- parseOption(optionMatch.group(1))) yield option).toList
 
 
-  private def tokenStream(source: String, split: Boolean = true): Tokens =
-    source.split("\\s+").filter(_ != "").toList
+  private def tokenStream(source: String, split: Boolean = true, tokenizer : String = """\s+"""): Tokens =
+    source.split(tokenizer).filter(_ != "").toList
 
   // keep only the Usage: part, remove everything after
   def printableUsage(doc: String): String = {

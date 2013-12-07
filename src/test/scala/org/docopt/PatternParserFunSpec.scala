@@ -248,21 +248,21 @@ class PatternParserFunSpec extends FunSpec {
     }
 
     it("should parse correctly: %s".format("-h --verbose")) {
-        assert (PP.parseArgv("-h --verbose", options) ==
+        assert (PP.parseArgv("-h\t--verbose", options) ==
                 (options,
                  List(Option("-h","",0,BooleanValue(value = true)),
                       Option("-v","--verbose",0,BooleanValue(value = true)))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt")) {
-        assert (PP.parseArgv("-h --file f.txt", options) ==
+        assert (PP.parseArgv("-h\t--file\tf.txt", options) ==
                 (options,
                   List(Option("-h","",0,BooleanValue(value = true)),
                        Option("-f","--file",1,StringValue("f.txt")))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt arg")) {
-        assert (PP.parseArgv("-h --file f.txt arg", options) ==
+        assert (PP.parseArgv("-h\t--file\tf.txt\targ", options) ==
                 (options,
                   List(Option("-h","",0,BooleanValue(value = true)),
                        Option("-f","--file",1,StringValue("f.txt")),
@@ -270,7 +270,7 @@ class PatternParserFunSpec extends FunSpec {
     }
 
     it("should parse correctly: %s".format("-h --file f.txt arg arg2")) {
-        assert (PP.parseArgv("-h --file f.txt arg arg2", options) ==
+        assert (PP.parseArgv("-h\t--file\tf.txt\targ\targ2", options) ==
                 (options,
                   List(Option("-h","",0,BooleanValue(value = true)),
                        Option("-f","--file",1,StringValue("f.txt")),
@@ -279,7 +279,7 @@ class PatternParserFunSpec extends FunSpec {
     }
 
     it("should parse correctly: %s".format("-h arg -- -v")) {
-        assert (PP.parseArgv("-h arg -- -v", options) ==
+        assert (PP.parseArgv("-h\targ\t--\t-v", options) ==
                 (options,
                   List(Option("-h","",0,BooleanValue(value = true)),
                        Argument("", StringValue("arg")),
@@ -378,11 +378,11 @@ Options:
 
   describe("double-dash support") {
     it("it should handle correctly '--'") {
-      PP.docopt("Usage: prog [-o] [--] <arg>\n\n-o", "-- -o", help = false, "", optionsFirst = false)
+      PP.docopt("Usage: prog [-o] [--] <arg>\n\n-o", "--\t-o", help = false, "", optionsFirst = false)
     }
 
     it("it should handle correctly '--' swapped") {
-      PP.docopt("Usage: prog [-o] [--] <arg>\n\n -o", "-o 1", help = false, "", optionsFirst = false)
+      PP.docopt("Usage: prog [-o] [--] <arg>\n\n -o", "-o\t1", help = false, "", optionsFirst = false)
     }
   }
 }
