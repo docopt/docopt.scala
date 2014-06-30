@@ -1,0 +1,12 @@
+expr          <- spacing basic_expr '...'? spacing
+basic_expr    <- '[options]' / required    / optional
+                             / long_option / short_options
+                             / argument    / command
+required      <- '(' expr+ ('|' expr+)* ')'
+optional      <- '[' expr+ ('|' expr+)* ']'
+long_option   <- '--' (alnum / '-')+ ('=' argument)?
+short_options <- '-'  (alnum) argument?
+argument      <- '<'  (alnum / ' ' / '-')+ '>'
+command       <- [a-z-]+
+spacing       <- [ \t\r\n]*
+alnum         <- [a-zA-Z0-9]
