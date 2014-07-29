@@ -171,8 +171,9 @@ object PatternParser {
 
   private def extractLongOptionValue(longOption: String) =
     if (longOption.exists(_ == '=')) {
+      val Splitter = """^(.*?)=(.*)$""".r
       try {
-      val Array(long, value) = longOption.split("=")
+        val Splitter(long, value) = longOption //val Array(long, value) = longOption.split("=")
         (long, Some(value))
       } catch {
         case _:Throwable => throw new UnparsableOptionException(longOption)
@@ -217,8 +218,9 @@ object PatternParser {
     case head :: tail => head :: clarifyLongOptionAmbiguities(tail, options)
   }
 
-  def parseArgv(argv: String, options: SeqOpt, optionFirst:Boolean = false) =
-    parseArgvRecursive(clarifyLongOptionAmbiguities(tokenStream(argv), options), options, optionFirst)
+  //def parseArgv(argv: String, options: SeqOpt, optionFirst:Boolean = false) : (SeqOpt, SeqPat) = parseArgv(argv.split("""\s+"""), options, optionFirst)
+  def parseArgv(argv: Array[String], options: SeqOpt, optionFirst:Boolean = false) : (SeqOpt, SeqPat) =
+    parseArgvRecursive(clarifyLongOptionAmbiguities(argv.toList, options), options, optionFirst)
 
   private def parseArgvRecursive(tokens: Tokens, options: SeqOpt, optionFirst: Boolean, ret: List[Pattern] = Nil): (SeqOpt, SeqPat) =
     tokens match {
@@ -241,7 +243,7 @@ object PatternParser {
 
 
   private def tokenStream(source: String, split: Boolean = true): Tokens =
-    source.split("\\s+").filter(_ != "").toList
+    source.split("""\s+""").filter(_ != "").toList
 
   // keep only the Usage: part, remove everything after
   def printableUsage(doc: String): String = {
@@ -259,7 +261,7 @@ object PatternParser {
     "( " + words.tail.map(x => if (x == programName) ") | (" else x).mkString(" ") + " )"
   }
 
-  def docopt(doc: String, argv: String = "", help: Boolean = true, version: String = "", optionsFirst: Boolean = false): SeqPat = {
+  def docopt(doc: String, argv: Array[String] = Array[String](), help: Boolean = true, version: String = "", optionsFirst: Boolean = false): SeqPat = {
     val usage = formalUsage(printableUsage(doc))
     val options = parseOptionDescriptions(doc)
     val (options_, pattern) = parsePattern(usage, options)

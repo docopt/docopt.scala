@@ -22,7 +22,7 @@ object Docopt {
             help: Boolean = true,
             version: String = "",
             optionsFirst: Boolean = false): Map[String, Any] = {
-    val collected = PatternParser.docopt(usage, argv.mkString(" "), help, version, optionsFirst)
+    val collected = PatternParser.docopt(usage, argv.filter(_ != ""), help, version, optionsFirst)
     val tupled:Seq[(String, Any)] = collected.map(pattern => pattern match {
       case o@Option(l,s,a,value:Value) => (o.name ,extractValue(value))
       case Argument(name,value:Value) => (name, extractValue(value))

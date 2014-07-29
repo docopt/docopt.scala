@@ -239,30 +239,30 @@ class PatternParserFunSpec extends FunSpec {
                        Option("-v", "--verbose"),
                        Option("-f", "--file", 1))
     it("should parse correctly: %s".format("")) {
-        assert (PP.parseArgv("", options) == (options, Nil))
+        assert (PP.parseArgv(Array[String](), options) == (options, Nil))
     }
 
     it("should parse correctly: %s".format("-h")) {
-        assert (PP.parseArgv("-h", options) ==
+        assert (PP.parseArgv(Array("-h"), options) ==
           (options, List(Option("-h","",0,BooleanValue(value = true)))))
     }
 
     it("should parse correctly: %s".format("-h --verbose")) {
-        assert (PP.parseArgv("-h --verbose", options) ==
+        assert (PP.parseArgv("-h --verbose".split("""\s+"""), options) ==
                 (options,
                  List(Option("-h","",0,BooleanValue(value = true)),
                       Option("-v","--verbose",0,BooleanValue(value = true)))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt")) {
-        assert (PP.parseArgv("-h --file f.txt", options) ==
+        assert (PP.parseArgv("-h --file f.txt".split("""\s+"""), options) ==
                 (options,
                   List(Option("-h","",0,BooleanValue(value = true)),
                        Option("-f","--file",1,StringValue("f.txt")))))
     }
 
     it("should parse correctly: %s".format("-h --file f.txt arg")) {
-        assert (PP.parseArgv("-h --file f.txt arg", options) ==
+        assert (PP.parseArgv("-h --file f.txt arg".split("""\s+"""), options) ==
                 (options,
                   List(Option("-h","",0,BooleanValue(value = true)),
                        Option("-f","--file",1,StringValue("f.txt")),
@@ -270,7 +270,7 @@ class PatternParserFunSpec extends FunSpec {
     }
 
     it("should parse correctly: %s".format("-h --file f.txt arg arg2")) {
-        assert (PP.parseArgv("-h --file f.txt arg arg2", options) ==
+        assert (PP.parseArgv("-h --file f.txt arg arg2".split("""\s+"""), options) ==
                 (options,
                   List(Option("-h","",0,BooleanValue(value = true)),
                        Option("-f","--file",1,StringValue("f.txt")),
@@ -279,7 +279,7 @@ class PatternParserFunSpec extends FunSpec {
     }
 
     it("should parse correctly: %s".format("-h arg -- -v")) {
-        assert (PP.parseArgv("-h arg -- -v", options) ==
+        assert (PP.parseArgv("-h arg -- -v".split("""\s+"""), options) ==
                 (options,
                   List(Option("-h","",0,BooleanValue(value = true)),
                        Argument("", StringValue("arg")),
@@ -290,7 +290,7 @@ class PatternParserFunSpec extends FunSpec {
   describe("long options error handling") {
     it("it should intercept a non existant option") {
       intercept[UnconsumedTokensException] {
-        PP.docopt("Usage: prog", "--non-existant", help = false, version = "", optionsFirst = false)
+        PP.docopt("Usage: prog", Array("--non-existant"), help = false, version = "", optionsFirst = false)
       }
     }
 
@@ -300,7 +300,7 @@ class PatternParserFunSpec extends FunSpec {
   --version
   --verbose"""
       intercept[RuntimeException] {
-        PP.docopt(usage, "--ver", help = false, "", optionsFirst = false)
+        PP.docopt(usage, Array("--ver"), help = false, "", optionsFirst = false)
       }
     }
 
@@ -308,19 +308,19 @@ class PatternParserFunSpec extends FunSpec {
       // since the option is defined to have an argument, the implicit ')' is
       // consumed by the parseOption
       intercept[MissingEnclosureException] {
-        PP.docopt("Usage: prog --conflict\n\n--conflict ARG", "", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog --conflict\n\n--conflict ARG", Array(""), help = false, "", optionsFirst = false)
       }
     }
 
     it("it should intercept a reversed conflicting definition") {
       intercept[UnexpectedArgumentException] {
-        PP.docopt("Usage: prog --long=ARG\n\n --long", "", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog --long=ARG\n\n --long", Array(""), help = false, "", optionsFirst = false)
       }
     }
 
     it("it should intercept a missing argument") {
       intercept[MissingArgumentException] {
-        PP.docopt("Usage: prog --long ARG\n\n --long ARG", "--long", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog --long ARG\n\n --long ARG", Array("--long"), help = false, "", optionsFirst = false)
       }
     }
 
@@ -331,7 +331,7 @@ Usage: prog --derp
 
 Options:
     --derp"""
-        PP.docopt(doc, "--derp=ARG", help = false, "", optionsFirst = false)
+        PP.docopt(doc, Array("--derp=ARG"), help = false, "", optionsFirst = false)
       }
     }
   }
@@ -339,25 +339,25 @@ Options:
   describe("short options error handling") {
     it("it should detect conflicting definitions") {
       intercept[UnparsableOptionException] {
-        PP.docopt("Usage: prog -x\n\n-x this\n-x that", "", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog -x\n\n-x this\n-x that", Array(""), help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect undefined options") {
       intercept[UnconsumedTokensException] {
-        PP.docopt("Usage: prog", "-x", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog", Array("-x"), help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect conflicting definitions with arguments") {
       intercept[MissingEnclosureException] {
-        PP.docopt("Usage: prog -x\n\n-x ARG", "", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog -x\n\n-x ARG", Array(""), help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect missing arguments") {
       intercept[MissingArgumentException] {
-        PP.docopt("Usage: prog -x ARG\n\n-x ARG", "-x", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog -x ARG\n\n-x ARG", Array("-x"), help = false, "", optionsFirst = false)
       }
     }
   }
@@ -365,24 +365,24 @@ Options:
   describe("[]|{}|() matching") {
     it("it should detect missing ]") {
       intercept[MissingEnclosureException] {
-        PP.docopt("Usage: prog [a [b]", "", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog [a [b]", Array(""), help = false, "", optionsFirst = false)
       }
     }
 
     it("it should detect extra )") {
       intercept[UnconsumedTokensException] {
-        PP.docopt("Usage: prog [a [b] ] c )", "", help = false, "", optionsFirst = false)
+        PP.docopt("Usage: prog [a [b] ] c )", Array(""), help = false, "", optionsFirst = false)
       }
     }
   }
 
   describe("double-dash support") {
     it("it should handle correctly '--'") {
-      PP.docopt("Usage: prog [-o] [--] <arg>\n\n-o", "-- -o", help = false, "", optionsFirst = false)
+      PP.docopt("Usage: prog [-o] [--] <arg>\n\n-o", "-- -o".split("""\s+"""), help = false, "", optionsFirst = false)
     }
 
     it("it should handle correctly '--' swapped") {
-      PP.docopt("Usage: prog [-o] [--] <arg>\n\n -o", "-o 1", help = false, "", optionsFirst = false)
+      PP.docopt("Usage: prog [-o] [--] <arg>\n\n -o", "-o 1".split("""\s+"""), help = false, "", optionsFirst = false)
     }
   }
 }
